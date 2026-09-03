@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Comptes Lies')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Liste des Comptes Lies</h2>
+    <!-- Port of comptelier.xhtml / CompteLierCtrl#afficherListe(). When Telephone is left
+         empty, every linked account is shown (covers listecptelie.xhtml's "list all" export,
+         which is not one of this module's required routes - see CompteLieController Javadoc). -->
+
+    <form method="get" th:action="@{/comptes/lies}">
+        <div class="form-row">
+            <label for="telephone">Telephone</label>
+            <input type="text" id="telephone" name="telephone" th:value="${telephone}"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+            <a th:href="@{/comptes/lies}">Tout afficher</a>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone</th>
+                <th>Compte</th>
+                <th>Nom</th>
+                <th>Prenoms</th>
+                <th>Date Linkage</th>
+                <th>Date Delinkage</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.telephoneClient}"></td>
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.nomClient}"></td>
+                <td th:text="${item.prenomClient}"></td>
+                <td th:text="${item.dateLinkage != null ? #dates.format(item.dateLinkage, 'dd/MM/yyyy HH:mm:ss') : ''}"></td>
+                <td th:text="${item.dateDelinkage != null ? #dates.format(item.dateDelinkage, 'dd/MM/yyyy HH:mm:ss') : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="6">Il n'y a aucune operation a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

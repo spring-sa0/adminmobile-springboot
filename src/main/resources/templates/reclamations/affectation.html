@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Affectation des Reclamations')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Affectation des reclamations</h2>
+    <!-- Port of affectrecla.xhtml / ReclaCtrl#affecter(Reclamations). -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <div style="overflow-x:auto">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone</th>
+                <th>Type</th>
+                <th>Details</th>
+                <th>Date Reclamation</th>
+                <th>Etat</th>
+                <th>Support</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${openList}">
+                <td th:text="${item.telClient}"></td>
+                <td th:text="${item.idtype != null ? item.idtype.libellerecla : ''}"></td>
+                <td th:text="${item.motifreclamatin}"></td>
+                <td th:text="${item.datereclamation != null ? #dates.format(item.datereclamation, 'dd/MM/yyyy') : ''}"></td>
+                <td th:text="${item.idetat != null ? item.idetat.libelleetat : ''}"></td>
+                <td>
+                    <form method="post" th:action="@{/reclamations/affectation}" style="display:flex;gap:6px;align-items:center">
+                        <input type="hidden" name="idreclamation" th:value="${item.idreclamation}"/>
+                        <select name="idsupport" required="required">
+                            <option th:each="s : ${listSupport}" th:value="${s.idsupport}"
+                                    th:text="${s.nomsupport + ' ' + s.prenomsupport}"></option>
+                        </select>
+                        <button type="submit">Affecter</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(openList)}">
+                <td colspan="6">Il n'y a aucune reclamation a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

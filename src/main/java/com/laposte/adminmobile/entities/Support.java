@@ -1,0 +1,152 @@
+package com.laposte.adminmobile.entities;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Collection;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+/**
+ * Ported from the legacy entity {@code admin.mobile.entities.Support}.
+ *
+ * Legacy NamedQueries (reimplement as Spring Data repository methods / @Query):
+ * <ul>
+ *   <li>Support.findAll - SELECT s FROM Support s</li>
+ *   <li>Support.findByIdsupport - SELECT s FROM Support s WHERE s.idsupport = :idsupport</li>
+ *   <li>Support.findByNomsupport - SELECT s FROM Support s WHERE s.nomsupport = :nomsupport</li>
+ *   <li>Support.findByPrenomsupport - SELECT s FROM Support s WHERE s.prenomsupport = :prenomsupport</li>
+ *   <li>Support.findByTelephonsupport - SELECT s FROM Support s WHERE s.telephonsupport = :telephonsupport</li>
+ *   <li>Support.findByMailsupport - SELECT s FROM Support s WHERE s.mailsupport = :mailsupport</li>
+ * </ul>
+ */
+@Entity
+@Table(name = "SUPPORT")
+@SequenceGenerator(name = "SEQ_ENREG", allocationSize = 1, sequenceName = "SEQ_ENREG")
+public class Support implements Serializable {
+
+    @Size(max = 25)
+    @Column(name = "CODEUTILISATEUR")
+    private String codeutilisateur;
+
+    @OneToMany(mappedBy = "idsupport")
+    private Collection<Reclamations> reclamationsCollection;
+
+    private static final long serialVersionUID = 1L;
+    // @Max(value=?)  @Min(value=?)//if you know range of your decimal fields consider using these annotations to enforce field validation
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_ENREG")
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "IDSUPPORT")
+    private BigDecimal idsupport;
+    @Size(max = 25)
+    @Column(name = "NOMSUPPORT")
+    private String nomsupport;
+    @Size(max = 50)
+    @Column(name = "PRENOMSUPPORT")
+    private String prenomsupport;
+    @Size(max = 12)
+    @Column(name = "TELEPHONSUPPORT")
+    private String telephonsupport;
+    @Size(max = 50)
+    @Column(name = "MAILSUPPORT")
+    private String mailsupport;
+
+    public Support() {
+    }
+
+    public Support(BigDecimal idsupport) {
+        this.idsupport = idsupport;
+    }
+
+    public BigDecimal getIdsupport() {
+        return idsupport;
+    }
+
+    public void setIdsupport(BigDecimal idsupport) {
+        this.idsupport = idsupport;
+    }
+
+    public String getNomsupport() {
+        return nomsupport;
+    }
+
+    public void setNomsupport(String nomsupport) {
+        this.nomsupport = nomsupport;
+    }
+
+    public String getPrenomsupport() {
+        return prenomsupport;
+    }
+
+    public void setPrenomsupport(String prenomsupport) {
+        this.prenomsupport = prenomsupport;
+    }
+
+    public String getTelephonsupport() {
+        return telephonsupport;
+    }
+
+    public void setTelephonsupport(String telephonsupport) {
+        this.telephonsupport = telephonsupport;
+    }
+
+    public String getMailsupport() {
+        return mailsupport;
+    }
+
+    public void setMailsupport(String mailsupport) {
+        this.mailsupport = mailsupport;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (idsupport != null ? idsupport.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof Support)) {
+            return false;
+        }
+        Support other = (Support) object;
+        if ((this.idsupport == null && other.idsupport != null) || (this.idsupport != null && !this.idsupport.equals(other.idsupport))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "admin.mobile.entities.Support[ idsupport=" + idsupport + " ]";
+    }
+
+    public Collection<Reclamations> getReclamationsCollection() {
+        return reclamationsCollection;
+    }
+
+    public void setReclamationsCollection(Collection<Reclamations> reclamationsCollection) {
+        this.reclamationsCollection = reclamationsCollection;
+    }
+
+    public String getCodeutilisateur() {
+        return codeutilisateur;
+    }
+
+    public void setCodeutilisateur(String codeutilisateur) {
+        this.codeutilisateur = codeutilisateur;
+    }
+
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Comptes Marchands')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Liste des Comptes Marchands</h2>
+    <!-- Port of listecom.xhtml. No filters on the legacy screen. A merchant account is a
+         USERS_EPOSTE row with IDPROFIL = 2 (confirmed by usersdao.activerMarchand/paramMarchand). -->
+
+    <div style="overflow-x:auto">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone</th>
+                <th>Nom</th>
+                <th>Prenom</th>
+                <th>Numero compte</th>
+                <th>Origine</th>
+                <th>Date creation</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.telephone}"></td>
+                <td th:text="${item.nom}"></td>
+                <td th:text="${item.prenom}"></td>
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.origine}"></td>
+                <td th:text="${item.dateCreation != null ? #dates.format(item.dateCreation, 'dd/MM/yyyy') : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="6">Il n'y a aucun compte marchand a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

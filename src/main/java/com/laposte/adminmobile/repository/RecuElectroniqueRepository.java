@@ -1,0 +1,104 @@
+package com.laposte.adminmobile.repository;
+
+import com.laposte.adminmobile.entities.RecuElectronique;
+import java.math.BigInteger;
+import java.util.Date;
+import java.util.List;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+/**
+ * Spring Data JPA port of {@code admin.mobile.dao.RecuElectroniquedao}.
+ * <p>
+ * The legacy DAO's {@code recupListopBy*}/{@code recupop} family ran raw SQL joining
+ * {@code spt.recu_electronique} to {@code spt.operation} on {@code code_operation}, then - for
+ * every row found - re-queried {@code RecuElectronique} by {@code numero_operation} to build the
+ * final list. Since every column that join filtered or selected on ({@code telephone},
+ * {@code numero_compte}, {@code montant}, {@code date_operation}, {@code libelle_operation},
+ * {@code code_operation}) already lives directly on {@link RecuElectronique}, the join added no
+ * filtering power of its own; the methods below reproduce the same net result as plain JPQL
+ * against the entity, without the redundant round trip.
+ */
+public interface RecuElectroniqueRepository extends JpaRepository<RecuElectronique, Long> {
+
+    List<RecuElectronique> findByTelephoneOrderByDateOperationDesc(String telephone);
+
+    List<RecuElectronique> findByNumeroCompteOrderByDateOperationDesc(Long numeroCompte);
+
+    /** Port of {@code opbyPeriode(date1, date2)}. */
+    List<RecuElectronique> findByDateOperationBetween(Date date1, Date date2);
+
+    /** Port of {@code listopBynumeroOperation}/{@code recupListopBynumop}/{@code recupop}. */
+    List<RecuElectronique> findByNumeroOperation(Long numeroOperation);
+
+    List<RecuElectronique> findByNumeroOperationOrderByDateOperationDesc(Long numeroOperation);
+
+    /** Port of {@code recupListopByTelephone(ptelephone, date1, date2)}. */
+    List<RecuElectronique> findByTelephoneAndDateOperationBetweenOrderByDateOperationDesc(
+            String telephone, Date date1, Date date2);
+
+    /** Port of {@code recupListopByCompe(numerocompte, date1, date2)}. */
+    List<RecuElectronique> findByNumeroCompteAndDateOperationBetweenOrderByDateOperationDesc(
+            Long numeroCompte, Date date1, Date date2);
+
+    /** Port of {@code recupListopByRefid(refbank)}. */
+    List<RecuElectronique> findByRefbank(String refbank);
+
+    /** Port of {@code recupListop(date1, date2, codeop)}. */
+    List<RecuElectronique> findByDateOperationBetweenAndCodeOperationOrderByDateOperationDesc(
+            Date date1, Date date2, BigInteger codeOperation);
+
+    /**
+     * Added for the "operations / transactions / consultations" module ports (screens with no
+     * legacy on-screen {@code p:dataTable} to copy from - see per-screen TODOs in
+     * {@code TransactionEtatController}/{@code EposteOperationController}): every EcoCCP
+     * transaction receipt in a date range, most-recent first. Used as-is for
+     * {@code /etats/transactions/ecoccp} and the un-filtered case of {@code /etats/transactions/global}.
+     */
+    List<RecuElectronique> findByDateOperationBetweenOrderByDateOperationDesc(Date date1, Date date2);
+
+    /**
+     * Same as above, additionally filtered by {@code origine} (the channel/operator column,
+     * used here as a best-faith stand-in for the legacy Jasper reports' "Operateur" parameter -
+     * see controller-level TODOs). Used for {@code bank-to-wallet}, {@code wallet-to-bank},
+     * {@code retrait}, {@code depot}, the operator-filtered {@code global} report and
+     * {@code gateway/liste}.
+     */
+    List<RecuElectronique> findByDateOperationBetweenAndOrigineOrderByDateOperationDesc(
+            Date date1, Date date2, String origine);
+
+    /**
+     * Cancelled EcoCCP operations in a date range: {@code motifAnnulation} is populated exactly
+     * by the {@code annul_op_ecoccp} stored procedure (see {@code RecuElectroniqueService#annulopeco}),
+     * so "not null" is a faithful marker of an annulled operation. Used for
+     * {@code /etats/transactions/ecoccp-annulees}.
+     */
+    List<RecuElectronique> findByMotifAnnulationIsNotNullAndDateOperationBetweenOrderByDateOperationDesc(
+            Date date1, Date date2);
+
+    /**
+     * Best-faith interpretation of "operations Eposte" (as opposed to plain EcoCCP operations):
+     * restricts the EcoCCP receipt table to telephones that also have a USERS_EPOSTE account
+     * (see {@link com.laposte.adminmobile.entities.Users}). There is no separate Eposte
+     * transaction table reachable from the legacy source (the real legacy report was
+     * Jasper-compiled; its SQL is not recoverable from the source tree - see module report
+     * TODOs), so this is an approximation: it narrows the same EcoCCP receipts to phone numbers
+     * known as Eposte subscribers. Used for {@code /eposte/operations} and
+     * {@code /etats/transactions/compte-a-compte}.
+     */
+    @Query("SELECT r FROM RecuElectronique r WHERE r.dateOperation BETWEEN :date1 AND :date2 "
+            + "AND r.telephone IN (SELECT u.telephone FROM Users u) ORDER BY r.dateOperation DESC")
+    List<RecuElectronique> findEposteScopedOperationsBetween(@Param("date1") Date date1, @Param("date2") Date date2);
+
+    /**
+     * Port of {@code recupNomprenomcom(numcompte)}: a lookup against {@code spt.compte} /
+     * {@code spt.client}, neither of which is one of the 18 JPA entities modeled in this port.
+     * Kept as a native passthrough query for fidelity with the legacy DAO's public surface.
+     */
+    @Query(value = "SELECT cl.nom_client || ' ' || cl.prenom_client "
+            + "FROM spt.compte c, spt.client cl "
+            + "WHERE c.numero_client = cl.numero_client AND c.numero_compte = :numeroCompte",
+            nativeQuery = true)
+    String recupNomprenomcom(@Param("numeroCompte") String numeroCompte);
+}

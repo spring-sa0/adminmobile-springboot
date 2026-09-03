@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Recap Global des Souscriptions')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Etat Recap Global des Souscriptions</h2>
+    <!-- Port of recapglobal.xhtml. New EPOSTE.USERS_EPOSTE rows in the period, grouped by
+         operateur (origine) - see RecapReportRepository javadoc. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/eposte/recap-global/souscriptions}">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}" required="required"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Operateur (origine)</th>
+                <th>Nb souscriptions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.label}"></td>
+                <td th:text="${item.count}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="2">Aucune souscription sur la periode.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

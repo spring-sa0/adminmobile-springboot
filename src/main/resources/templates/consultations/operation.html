@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Consultation par Numero Operation')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Consultation Operation Clients</h2>
+    <!-- Port of consultop.xhtml / OpCtrl#recherherop(). See OperationConsultationController
+         Javadoc for the simplification note on the legacy method's session-scoped bug. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/consultations/operation}">
+        <div class="form-row">
+            <label for="numeroop">Numero operation</label>
+            <input type="text" id="numeroop" name="numeroop" th:value="${numeroop}"/>
+        </div>
+        <div class="form-row">
+            <label for="referenceid">Reference id</label>
+            <input type="text" id="referenceid" name="referenceid" th:value="${referenceid}"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+            <a th:href="@{/consultations/operation}">Effacer</a>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone</th>
+                <th>Compte</th>
+                <th>Montant</th>
+                <th>Date operation</th>
+                <th>Libelle Operation</th>
+                <th>Numero operation</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.telephone}"></td>
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.montant}"></td>
+                <td th:text="${#dates.format(item.dateOperation, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                <td th:text="${item.libelleOperation}"></td>
+                <td th:text="${item.numeroOperation}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="6">Il n'y a aucune operation a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

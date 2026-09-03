@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Suggestion Client')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Suggestion Client</h2>
+    <!-- Port of sugestion.xhtml / UserCtrl2#envoyeSugestion(). -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+
+    <form method="post" th:action="@{/suggestions}" th:object="${suggestionForm}">
+        <div class="form-row">
+            <label for="telephone">Telephone</label>
+            <input type="text" id="telephone" th:field="*{telephone}" maxlength="8" placeholder="8 chiffres"/>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('telephone')}" th:errors="*{telephone}"></span>
+        </div>
+        <div class="form-row">
+            <label for="idappli">Application</label>
+            <select id="idappli" th:field="*{idappli}">
+                <option value="">--Faites un choix--</option>
+                <option th:each="a : ${listApplis}" th:value="${a.idappli}" th:text="${a.libelleappli}"></option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label for="motif">Suggestion</label>
+            <textarea id="motif" th:field="*{motif}" rows="4" cols="40"></textarea>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></span>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Envoyer</button>
+        </div>
+    </form>
+
+    <h3 style="margin-top:24px">Suggestions recentes</h3>
+    <div style="overflow-x:auto">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone client</th>
+                <th>Suggestion</th>
+                <th>Date</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${recent}">
+                <td th:text="${item.telClient}"></td>
+                <td th:text="${item.libellesugest}"></td>
+                <td th:text="${item.datesugest != null ? #dates.format(item.datesugest, 'dd/MM/yyyy') : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(recent)}">
+                <td colspan="3">Il n'y a aucune suggestion a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

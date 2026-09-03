@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Solde Compte Eco')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Solde Compte Eco</h2>
+    <!-- Port of soldecompte.xhtml. Best-faith reconstruction: period-end balance (last
+         SOLDE_APRES in range) for every account that had at least one EcoCCP movement in the
+         period - see ComptesReportRepository javadoc. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/comptes/solde}">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}" required="required"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Numero compte</th>
+                <th>Intitule</th>
+                <th>Solde (fin de periode)</th>
+                <th>Date derniere operation</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.intitule}"></td>
+                <td th:text="${item.solde}"></td>
+                <td th:text="${item.dateOperation != null ? #dates.format(item.dateOperation, 'dd/MM/yyyy HH:mm:ss') : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="4">Aucun mouvement sur la periode.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

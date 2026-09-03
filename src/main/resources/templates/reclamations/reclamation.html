@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Reclamation Client')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Reclamation Client</h2>
+    <!-- Port of reclamation.xhtml / UserCtrl2#envoyeRecla(). -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+
+    <form method="post" th:action="@{/reclamations}" th:object="${reclamationForm}">
+        <div class="form-row">
+            <label for="telephone">Telephone</label>
+            <input type="text" id="telephone" th:field="*{telephone}" maxlength="8" placeholder="8 chiffres"/>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('telephone')}" th:errors="*{telephone}"></span>
+        </div>
+        <div class="form-row">
+            <label for="idtype">Type</label>
+            <select id="idtype" th:field="*{idtype}">
+                <option value="">--Faites un choix--</option>
+                <option th:each="t : ${listTypes}" th:value="${t.idtype}" th:text="${t.libellerecla}"></option>
+            </select>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('idtype')}" th:errors="*{idtype}"></span>
+        </div>
+        <div class="form-row">
+            <label for="idappli">Application</label>
+            <select id="idappli" th:field="*{idappli}">
+                <option value="">--Faites un choix--</option>
+                <option th:each="a : ${listApplis}" th:value="${a.idappli}" th:text="${a.libelleappli}"></option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label for="motif">Details</label>
+            <textarea id="motif" th:field="*{motif}" rows="4" cols="40"></textarea>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></span>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Envoyer</button>
+        </div>
+    </form>
+
+    <h3 style="margin-top:24px">Reclamations non reglees</h3>
+    <div style="overflow-x:auto">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone</th>
+                <th>Type</th>
+                <th>Details</th>
+                <th>Date Reclamation</th>
+                <th>Etat</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${openList}">
+                <td th:text="${item.telClient}"></td>
+                <td th:text="${item.idtype != null ? item.idtype.libellerecla : ''}"></td>
+                <td th:text="${item.motifreclamatin}"></td>
+                <td th:text="${item.datereclamation != null ? #dates.format(item.datereclamation, 'dd/MM/yyyy') : ''}"></td>
+                <td th:text="${item.idetat != null ? item.idetat.libelleetat : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(openList)}">
+                <td colspan="5">Il n'y a aucune reclamation a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

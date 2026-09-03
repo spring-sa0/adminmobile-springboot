@@ -1,0 +1,194 @@
+/* Styles additionnels pour le portage Spring Boot / Thymeleaf.
+   Remplace le rendu automatique de p:menubar (PrimeFaces) par un menu CSS simple. */
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    background-color: #f5f5f5;
+}
+
+.admin-menu .header {
+    background-color: #003333;
+    color: #fff;
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-menu .header h1 {
+    font-size: 18px;
+    margin: 0;
+}
+
+.admin-menu .loginDisplay {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-menu .loginDisplay img {
+    height: 32px;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: #ffcc00;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: inherit;
+}
+
+ul.menubar {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    background-color: #005555;
+    flex-wrap: wrap;
+}
+
+ul.menubar > li {
+    position: relative;
+    padding: 8px 12px;
+    color: #fff;
+    cursor: default;
+}
+
+ul.menubar > li > span,
+ul.menubar > li > a {
+    color: #fff;
+    text-decoration: none;
+}
+
+ul.menubar ul {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    min-width: 220px;
+    z-index: 100;
+    list-style: none;
+    margin: 0;
+    padding: 4px 0;
+}
+
+ul.menubar li ul li {
+    position: relative;
+    padding: 0;
+}
+
+ul.menubar li ul li > ul {
+    top: 0;
+    left: 100%;
+}
+
+ul.menubar li:hover > ul {
+    display: block;
+}
+
+ul.menubar li a, ul.menubar li span {
+    display: block;
+    padding: 6px 12px;
+    color: #003333;
+    white-space: nowrap;
+}
+
+ul.menubar > li > span, ul.menubar > li > a {
+    color: #fff;
+    padding: 0;
+}
+
+.mainDiv {
+    padding: 20px;
+    background-color: #fff;
+    margin: 16px;
+    min-height: 300px;
+    box-shadow: 0 0 4px rgba(0,0,0,0.1);
+}
+
+.login-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+}
+
+.login-panel {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 24px;
+    width: 360px;
+    background: #fff;
+    box-shadow: 0 0 8px rgba(0,0,0,0.15);
+}
+
+.login-panel h1 {
+    text-align: center;
+    color: #003333;
+    font-size: 20px;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 12px;
+}
+
+.form-row label {
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.form-row input {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+}
+
+.alert-error {
+    background-color: #fdecea;
+    color: #b3261e;
+    border: 1px solid #f5c2c0;
+    padding: 8px 12px;
+    border-radius: 3px;
+    margin-bottom: 12px;
+}
+
+.alert-success {
+    background-color: #eaf7ea;
+    color: #1e6b1e;
+    border: 1px solid #c2e0c2;
+    padding: 8px 12px;
+    border-radius: 3px;
+    margin-bottom: 12px;
+}
+
+table.data-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+table.data-table th, table.data-table td {
+    border: 1px solid #ddd;
+    padding: 6px 10px;
+    text-align: left;
+}
+
+table.data-table th {
+    background-color: #005555;
+    color: #fff;
+}
+
+table.data-table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}

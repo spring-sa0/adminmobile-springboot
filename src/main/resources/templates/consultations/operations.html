@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Consultation Operations')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Consultation Operation Clients</h2>
+    <!-- Port of consultaionop.xhtml / OpCtrl#afficherop(). Legacy rule preserved: if
+         "Telephone" is filled it wins the search (regardless of whether "Numero Compte" is
+         also filled); only when Telephone is empty is the search done by Numero Compte. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/consultations/operations}">
+        <div class="form-row">
+            <label for="ptelephone">Telephone</label>
+            <input type="text" id="ptelephone" name="ptelephone" th:value="${ptelephone}" placeholder="ex. 90000000"/>
+        </div>
+        <div class="form-row">
+            <label for="numcompte">Numero Compte</label>
+            <input type="text" id="numcompte" name="numcompte" th:value="${numcompte}"/>
+        </div>
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+            <a th:href="@{/consultations/operations}">Effacer</a>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone</th>
+                <th>Compte</th>
+                <th>Montant</th>
+                <th>Date operation</th>
+                <th>Libelle Operation</th>
+                <th>Numero operation</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.telephone}"></td>
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.montant}"></td>
+                <td th:text="${#dates.format(item.dateOperation, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                <td th:text="${item.libelleOperation}"></td>
+                <td th:text="${item.numeroOperation}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="6">Il n'y a aucune operation a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

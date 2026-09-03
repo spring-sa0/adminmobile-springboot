@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Souscription Eposte')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Etat de Souscription de Eposte</h2>
+    <!-- Port of souscript.xhtml. Interpreted as new Eposte subscriptions (USERS_EPOSTE rows
+         created) in the period, optionally by operateur (origine) - see UsersRepository javadoc. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/eposte/souscription}">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="operateur">Operateur</label>
+            <select id="operateur" name="operateur">
+                <option value="">--Faites un choix--</option>
+                <option value="TMoney" th:selected="${operateur == 'TMoney'}">TMoney</option>
+                <option value="FLooz" th:selected="${operateur == 'FLooz'}">FLooz</option>
+                <option value="Tout" th:selected="${operateur == 'Tout'}">Tout</option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <p>Nombre de souscriptions : <strong th:text="${#lists.size(results)}"></strong></p>
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone</th>
+                <th>Nom</th>
+                <th>Prenom</th>
+                <th>Origine</th>
+                <th>Date creation</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.telephone}"></td>
+                <td th:text="${item.nom}"></td>
+                <td th:text="${item.prenom}"></td>
+                <td th:text="${item.origine}"></td>
+                <td th:text="${item.dateCreation != null ? #dates.format(item.dateCreation, 'dd/MM/yyyy HH:mm:ss') : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="5">Il n'y a aucune souscription a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

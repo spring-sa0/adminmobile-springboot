@@ -1,0 +1,106 @@
+package com.laposte.adminmobile.entities;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Collection;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+/**
+ * Ported from the legacy entity {@code admin.mobile.entities.TypeReclammation}.
+ * (Class/table name misspelling "Reclammation" with double-M is preserved
+ * verbatim from the legacy source.)
+ *
+ * Legacy NamedQueries (reimplement as Spring Data repository methods / @Query):
+ * <ul>
+ *   <li>TypeReclammation.findAll - SELECT t FROM TypeReclammation t</li>
+ *   <li>TypeReclammation.findByIdtype - SELECT t FROM TypeReclammation t WHERE t.idtype = :idtype</li>
+ *   <li>TypeReclammation.findByLibellerecla - SELECT t FROM TypeReclammation t WHERE t.libellerecla = :libellerecla</li>
+ * </ul>
+ */
+@Entity
+@Table(name = "TYPE_RECLAMMATION")
+@SequenceGenerator(name = "SEQ_ENREG", allocationSize = 1, sequenceName = "SEQ_ENREG")
+public class TypeReclammation implements Serializable {
+
+    @OneToMany(mappedBy = "idtype")
+    private Collection<Reclamations> reclamationsCollection;
+
+    private static final long serialVersionUID = 1L;
+    // @Max(value=?)  @Min(value=?)//if you know range of your decimal fields consider using these annotations to enforce field validation
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_ENREG")
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "IDTYPE")
+    private BigDecimal idtype;
+    @Size(max = 200)
+    @Column(name = "LIBELLERECLA")
+    private String libellerecla;
+
+    public TypeReclammation() {
+    }
+
+    public TypeReclammation(BigDecimal idtype) {
+        this.idtype = idtype;
+    }
+
+    public BigDecimal getIdtype() {
+        return idtype;
+    }
+
+    public void setIdtype(BigDecimal idtype) {
+        this.idtype = idtype;
+    }
+
+    public String getLibellerecla() {
+        return libellerecla;
+    }
+
+    public void setLibellerecla(String libellerecla) {
+        this.libellerecla = libellerecla;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 0;
+        hash += (idtype != null ? idtype.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        // TODO: Warning - this method won't work in the case the id fields are not set
+        if (!(object instanceof TypeReclammation)) {
+            return false;
+        }
+        TypeReclammation other = (TypeReclammation) object;
+        if ((this.idtype == null && other.idtype != null) || (this.idtype != null && !this.idtype.equals(other.idtype))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "admin.mobile.entities.TypeReclammation[ idtype=" + idtype + " ]";
+    }
+
+    public Collection<Reclamations> getReclamationsCollection() {
+        return reclamationsCollection;
+    }
+
+    public void setReclamationsCollection(Collection<Reclamations> reclamationsCollection) {
+        this.reclamationsCollection = reclamationsCollection;
+    }
+
+}

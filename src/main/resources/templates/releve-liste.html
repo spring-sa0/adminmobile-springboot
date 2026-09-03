@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Releve - Liste')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2 style="color:#f2693d;">Liste de comptes parametres</h2>
+
+    <div class="alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <div class="form-actions" style="justify-content:flex-start; gap:16px; margin-bottom:16px;">
+        <a th:href="@{/releves/liste/export}">Exporter en Excel</a>
+        <a th:href="@{/releves/liste}">Rafraichir</a>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Numero Compte</th>
+                <th>Intitule Compte</th>
+                <th>Mail</th>
+                <th>Frequence</th>
+                <th>Format</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(listereleve)}">
+                <td colspan="6">Il n'y a aucune operation a afficher..</td>
+            </tr>
+            <tr th:each="item : ${listereleve}">
+                <td th:text="${item.numerocompte}"></td>
+                <td th:text="${item.intitule}"></td>
+                <td th:text="${item.mail}"></td>
+                <td th:text="${item.jourenvoi}"></td>
+                <td th:text="${item.typefichier}"></td>
+                <td style="white-space:nowrap;">
+                    <a th:href="@{/releves/liste/{id}/edit(id=${item.idreleve})}">Modifier</a>
+                    &#160;|&#160;
+                    <form th:action="@{/releves/liste/{id}/delete(id=${item.idreleve})}" method="post"
+                          style="display:inline"
+                          onsubmit="return confirm('Voulez-vous confirmer la suppression du parametre ?');">
+                        <button type="submit" class="link-button" style="color:#b3261e;">Supprimer</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

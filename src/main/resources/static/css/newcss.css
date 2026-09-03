@@ -1,0 +1,27 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : 24 déc. 2015, 20:02:27
+    Author     : ahostyle
+*/
+
+.ui-icon-pencil {
+  background-image: url(../images/add.png) !important;
+  height: 20px;
+  width:20px;
+ }
+ 
+ .ui-datatable .ui-row-editor .ui-icon-pencil {
+    background-image: url(../images/accept.png);
+}
+
+.ui-datatable .ui-row-editor .ui-icon-check {
+    background-image: url(../images/cancel.png);
+}
+
+.ui-datatable .ui-row-editor .ui-icon-close {
+    background-image: url("#{resource['images/tick.png']}");
+}

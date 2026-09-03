@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('ADMINISTRATION, Application Mobile')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Bienvenue</h2>
+    <p>Portail d'administration des applications mobiles (EcoCCP, e-poste, Flooz, T-Money).</p>
+    <p>Utilisez le menu ci-dessus pour acceder aux differents modules.</p>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

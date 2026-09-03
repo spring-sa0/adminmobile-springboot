@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="op_togocel" pageWidth="1750" pageHeight="595" orientation="Landscape" whenNoDataType="AllSectionsNoDetail" columnWidth="1710" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" isIgnorePagination="true" uuid="18ad70bc-1c85-4460-a3ed-fc71bec38e0c">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="550"/>
+	<property name="ireport.y" value="0"/>
+	<style name="Title" fontName="Times New Roman" fontSize="50" isBold="true" pdfFontName="Times-Bold"/>
+	<style name="SubTitle" forecolor="#736343" fontName="Arial" fontSize="18"/>
+	<style name="Column header" forecolor="#666666" fontName="Arial" fontSize="12" isBold="true"/>
+	<style name="Detail" fontName="Arial" fontSize="12"/>
+	<style name="Row" mode="Transparent">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$V{REPORT_COUNT}%2 == 0]]></conditionExpression>
+			<style backcolor="#E6DAC3"/>
+		</conditionalStyle>
+	</style>
+	<parameter name="datedebut" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="datefin" class="java.util.Date">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select to_char(r.DATE_OPERATION,'yyyy-MM-dd HH24:MI:SS') partner_op_date, r.REFBANK partner_mb_ref,
+r.NUMERO_OPERATION partner_bank_ref,
+(case  when  r.code_operation in (23015,24042,25043) then 'bankcashin'
+       when  r.code_operation in (23010,24043,25042) then 'bankcashout'
+ end) partner_op_type,
+r.MONTANT partner_amount, r.TELEPHONE partner_initiator_msisdn,
+r.NUMERO_COMPTE partner_account_number,
+(case  substr(r.numero_compte,-4,1) when  '1' then  'COMPTE COURANT' when '6' then 'COMPTE EPARGNE' ELSE 'AUTRES' end)  partner_account_name,
+
+(case  when  r.code_operation in (23015,24042,25043) then 'bankcashin'
+       when  r.code_operation in (23010,24043,25042) then 'bankcashout'
+ end) typeop,
+cl.nom_client partner_clt_lastname,
+cl.prenom_client partner_clt_firstname,
+'LA POSTE' partner_bank_name,
+
+(case
+       when  r.code_operation in (23010) then 'null' ELSE NUMERO_DEST
+ end) partner_dest_msisdn,
+
+(case
+       when  r.REFBANK is null then 'ECHEC' ELSE 'SUCCES'
+ end) partner_trans_state,
+
+'null' partner_agency_name,
+r.COM_OPERATION partner_bank_fees,
+r.NUMERO_OPERATION partner_requestid,(case when  r.code_operation in (24042,25042,24043,25043) then 'EPOSTE' else 'ECOCPP'
+  end) SOURCE
+from
+spt.recu_electronique r, spt.client cl
+where
+substr(r.numero_compte,1,9) = cl.numero_client
+and
+r.code_operation in (24042,24043,23010,23015)
+and
+r.MONTANT > 0
+and
+to_number(to_char(date_operation,'yyyymmdd')) between  to_number(to_char($P{datedebut},'yyyymmdd')) and to_number(to_char($P{datefin},'yyyymmdd'))
+order by r.numero_operation]]>
+	</queryString>
+	<field name="PARTNER_OP_DATE" class="java.lang.String"/>
+	<field name="PARTNER_MB_REF" class="java.lang.String"/>
+	<field name="PARTNER_BANK_REF" class="java.math.BigDecimal"/>
+	<field name="PARTNER_OP_TYPE" class="java.lang.String"/>
+	<field name="PARTNER_AMOUNT" class="java.math.BigDecimal"/>
+	<field name="PARTNER_INITIATOR_MSISDN" class="java.lang.String"/>
+	<field name="PARTNER_ACCOUNT_NUMBER" class="java.math.BigDecimal"/>
+	<field name="PARTNER_ACCOUNT_NAME" class="java.lang.String"/>
+	<field name="TYPEOP" class="java.lang.String"/>
+	<field name="PARTNER_CLT_LASTNAME" class="java.lang.String"/>
+	<field name="PARTNER_CLT_FIRSTNAME" class="java.lang.String"/>
+	<field name="PARTNER_BANK_NAME" class="java.lang.String"/>
+	<field name="PARTNER_DEST_MSISDN" class="java.lang.String"/>
+	<field name="PARTNER_TRANS_STATE" class="java.lang.String"/>
+	<field name="PARTNER_AGENCY_NAME" class="java.lang.String"/>
+	<field name="PARTNER_BANK_FEES" class="java.math.BigDecimal"/>
+	<field name="PARTNER_REQUESTID" class="java.math.BigDecimal"/>
+	<field name="SOURCE" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<pageHeader>
+		<band height="1" splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="15" splitType="Stretch">
+			<staticText>
+				<reportElement uuid="935744a3-37d9-4a77-9742-7e7c018df7ef" style="Column header" x="0" y="0" width="88" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_OP_DATE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="d9a82af9-85bc-464e-8f4b-8e84db1917bb" style="Column header" x="88" y="0" width="86" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_MB_REF]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="05c1f47c-0aad-4605-b611-cce758f8dd4b" style="Column header" x="174" y="0" width="95" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_BANK_REF]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="368aa205-eef3-46d5-944c-97a8567add76" style="Column header" x="269" y="0" width="91" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_OP_TYPE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="67fd6f98-de52-4cf4-9b53-4ca639333eb8" style="Column header" x="360" y="0" width="87" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_AMOUNT]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="6fb4b5b8-49a7-464f-b7b0-f738d0cb87be" style="Column header" x="447" y="0" width="133" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_INITIATOR_MSISDN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="22350b2f-d152-422a-8f80-25cc9addff8a" style="Column header" x="580" y="0" width="127" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_ACCOUNT_NUMBER]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="be2b1041-cbb4-4309-b51c-edecf9cac8aa" style="Column header" x="946" y="0" width="120" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_CLT_FIRSTNAME]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="53e918ef-761b-4a6f-a153-d5126b2f13cc" style="Column header" x="826" y="0" width="121" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_CLT_LASTNAME]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="a43416f1-a3b1-4edb-a9d9-9741cba48ff3" style="Column header" x="707" y="0" width="119" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_ACCOUNT_NAME]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="58522d3c-1a31-47f3-b05f-4e72498fa425" style="Column header" x="1066" y="0" width="100" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_BANK_NAME]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="c84036f9-5b3b-4166-9af7-da6b832b0ed7" style="Column header" x="1166" y="0" width="112" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_DEST_MSISDN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="617e47f1-4ce3-43bd-88e2-64638b95253c" style="Column header" x="1278" y="0" width="112" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_TRANS_STATE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="29d9aef4-1e2e-4bda-8543-44b1db19eca1" style="Column header" x="1390" y="0" width="117" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_AGENCY_NAME]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="60a32a88-06e9-429a-a157-d29b6187ee5e" style="Column header" x="1507" y="0" width="98" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_BANK_FEES]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="f0c8fe0a-519e-4a6d-bc0d-3d982e091d47" style="Column header" x="1605" y="0" width="105" height="15" forecolor="#736343"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<text><![CDATA[PARTNER_REQUESTID]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="15" splitType="Stretch">
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="6d6e5c09-b326-4fe2-9136-bacc690595e0" style="Detail" x="946" y="0" width="120" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_CLT_FIRSTNAME}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="2afee2ec-315c-4170-864c-5c0fce8d4ef5" style="Detail" x="826" y="0" width="121" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_CLT_LASTNAME}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="51dc70bd-6bf9-483e-98e6-4816fd2cddd9" style="Detail" x="707" y="0" width="119" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_ACCOUNT_NAME}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="53e669b9-283e-40d5-95dc-1a79947946dd" style="Detail" x="0" y="0" width="88" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_OP_DATE}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="46ca2c09-9cd6-4936-8c2b-1bfc4a94d9e2" style="Detail" x="88" y="0" width="86" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_MB_REF}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="e7855028-f4e9-4d39-ac97-df0493222cdf" style="Detail" x="174" y="0" width="95" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_BANK_REF}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="b37e2909-d419-423d-ba19-3d8bb952b837" style="Detail" x="269" y="0" width="91" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_OP_TYPE}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="7dd829e3-52ee-468f-ab16-274183b5d3b5" style="Detail" x="360" y="0" width="87" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_AMOUNT}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="9d5ed20c-2025-477e-8b04-858032da4fe8" style="Detail" x="447" y="0" width="132" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_INITIATOR_MSISDN}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="f155b09a-c7d2-4d5e-85bc-5cc1081ae4da" style="Detail" x="579" y="0" width="128" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_ACCOUNT_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="e9ba54b8-ce9c-4d51-bf57-4c5d8f0e2782" style="Detail" x="1066" y="0" width="100" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_BANK_NAME}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="a88113cb-9bf9-4fbd-96f4-7bbe0c54d069" style="Detail" x="1166" y="0" width="112" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_DEST_MSISDN}.replace("null","")]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="a1d0caf0-854b-4bad-a7eb-3645a8d83b62" style="Detail" x="1278" y="0" width="112" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_TRANS_STATE}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="7e96ad1d-7616-4ec0-ab0d-533adb515f88" style="Detail" x="1390" y="0" width="117" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_AGENCY_NAME}.replace("null","")]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="8cc7a5d8-994a-42af-a8f6-19c180c65f28" style="Detail" x="1507" y="0" width="98" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_BANK_FEES}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement uuid="efb612ee-a0ee-4b92-90fc-24e127cc305d" style="Detail" x="1605" y="0" width="105" height="15"/>
+				<textElement verticalAlignment="Middle">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PARTNER_REQUESTID}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band splitType="Stretch"/>
+	</summary>
+</jasperReport>

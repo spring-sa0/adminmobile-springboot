@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Liste des Reclamations')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Report Liste Reclamation</h2>
+    <!-- Port of listerecla.xhtml / EtatbeanCtrl#etatlistReclaexcel()/etatlistReclapdf(): the legacy
+         screen only offered PDF/Excel exports of this query - shown on-screen here instead, no
+         Jasper/POI reporting is set up in this port. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/reclamations/liste}">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}"/>
+        </div>
+        <div class="form-row">
+            <label for="etat">Type</label>
+            <select id="etat" name="etat">
+                <option value="" th:selected="${etat == null or etat == ''}">--Faites un choix--</option>
+                <option value="TOUT" th:selected="${etat == 'TOUT'}">TOUT</option>
+                <option value="REGLE" th:selected="${etat == 'REGLE'}">REGLE</option>
+                <option value="NON REGLE" th:selected="${etat == 'NON REGLE'}">NON REGLE</option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone</th>
+                <th>Type</th>
+                <th>Details</th>
+                <th>Date Reclamation</th>
+                <th>Etat</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.telClient}"></td>
+                <td th:text="${item.idtype != null ? item.idtype.libellerecla : ''}"></td>
+                <td th:text="${item.motifreclamatin}"></td>
+                <td th:text="${item.datereclamation != null ? #dates.format(item.datereclamation, 'dd/MM/yyyy') : ''}"></td>
+                <td th:text="${item.idetat != null ? item.idetat.libelleetat : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="5">Il n'y a aucune reclamation a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

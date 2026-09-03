@@ -1,0 +1,43 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : 26 nov. 2015, 00:18:14
+    Author     : thomas
+*/
+.adrTable{   
+   border-collapse:collapse;
+   border-bottom:1px solid #000000;
+   
+}
+
+.adrTableHeader{
+   text-align:center;
+   background:darkblue;
+   border-bottom:1px solid #000000;
+   border-top:1px solid #000000;
+   padding:2px;
+   width: 800px;
+   border: 1px;
+   color:#FFFFFF; 
+}
+
+.adrTableOddRow{
+   text-align:center;
+   background:none repeat scroll 0 0 #FFFFFF;	
+}
+
+.adrTableEvenRow{
+   text-align:center;
+   background:none repeat scroll 0 0 #FFFFFF;
+}
+ .pic {
+        margin-bottom: -4px;
+        margin-right: 2px;
+    }
+    .search .rich-menu-item-hover{
+        background-color: transparent;
+        border-color: transparent;
+    }

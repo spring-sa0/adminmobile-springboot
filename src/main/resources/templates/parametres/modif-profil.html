@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Modification de Profil')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Modification de Profil</h2>
+    <!-- Port of modifprofil.xhtml / UserCtrl2#afficheUser()+modifierprofil()+affichercom(). Admin only (/parametres/**). -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/parametres/modif-profil}">
+        <div class="form-row">
+            <label for="telephone">Telephone</label>
+            <input type="text" id="telephone" name="telephone" th:value="${telephone}" maxlength="8" required="required"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div th:if="${foundUser != null}" style="margin-top:20px">
+        <div class="form-row">
+            <label>Nom et prenoms</label>
+            <input type="text" th:value="${nomprenom}" readonly="readonly"/>
+        </div>
+
+        <!-- Compte-name check, plain-form equivalent of the legacy AJAX blur on numero compte. -->
+        <form method="get" th:action="@{/parametres/modif-profil}">
+            <input type="hidden" name="telephone" th:value="${telephone}"/>
+            <div class="form-row">
+                <label for="checkCompte">Numero compte (verifier)</label>
+                <input type="text" id="checkCompte" name="numeroCompte" th:value="${numeroCompte}" maxlength="50"/>
+                <button type="submit">Verifier compte</button>
+            </div>
+        </form>
+        <div class="alert-error" th:if="${compteError}" th:text="${compteError}"></div>
+        <div th:if="${nomprenomcom}" style="font-size:larger;color:#b3261e" th:text="${nomprenomcom}"></div>
+
+        <form method="post" th:action="@{/parametres/modif-profil}" style="margin-top:16px">
+            <input type="hidden" name="telephone" th:value="${telephone}"/>
+            <div class="form-row">
+                <label for="idprofil">Profil</label>
+                <select id="idprofil" name="idprofil">
+                    <option value="">--Faites un choix--</option>
+                    <option th:each="p : ${profils}"
+                            th:value="${p.idprofil}"
+                            th:text="${p.libelle}"
+                            th:selected="${selectedProfil != null and p.idprofil.intValue() == selectedProfil.intValue()}"></option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="numeroCompte">Numero Compte</label>
+                <input type="text" id="numeroCompte" name="numeroCompte" th:value="${numeroCompte}" maxlength="50"/>
+            </div>
+            <div class="form-actions">
+                <button type="submit">Modifier</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

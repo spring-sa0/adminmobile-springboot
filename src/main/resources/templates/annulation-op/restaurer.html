@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Restauration Operation EcoCCP')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Restauration Operations EcoCCP</h2>
+    <!-- Port of restaureannul.xhtml / OpCtrl#afficheresto()+restaureop(). -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/annulation-op/restaurer}">
+        <div class="form-row">
+            <label for="numop">Numero operation</label>
+            <input type="text" id="numop" name="numop" th:value="${numop}" required="required"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone</th>
+                <th>Compte</th>
+                <th>Montant</th>
+                <th>Date operation</th>
+                <th>Libelle Operation</th>
+                <th>Numero operation</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.telephone}"></td>
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.montant}"></td>
+                <td th:text="${#dates.format(item.dateOperation, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                <td th:text="${item.libelleOperation}"></td>
+                <td th:text="${item.numeroOperation}"></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <form method="post" th:action="@{/annulation-op/restaurer}" style="margin-top:16px"
+              th:if="${!#lists.isEmpty(results)}"
+              onsubmit="return confirm('Voulez-vous confirmer la restauration de l\'operation ?');">
+            <input type="hidden" name="numop" th:value="${numop}"/>
+            <div class="form-actions">
+                <button type="submit">Restaurer Operation</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

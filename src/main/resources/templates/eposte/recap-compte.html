@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Recap Operations par Compte')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Etat Recap des Operations par Compte</h2>
+    <!-- Port of recapcompte.xhtml. Aggregate (count/sum) of SPT.RECU_ELECTRONIQUE grouped by
+         numero_compte (label shows the account's intitule when known) - see
+         RecapReportRepository javadoc for provenance. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/eposte/recap/compte}">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}" required="required"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Compte</th>
+                <th>Nb operations</th>
+                <th>Total montant</th>
+                <th>Total commission</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.label}"></td>
+                <td th:text="${item.count}"></td>
+                <td th:text="${item.totalMontant}"></td>
+                <td th:text="${item.totalCommission}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="4">Aucune operation sur la periode.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

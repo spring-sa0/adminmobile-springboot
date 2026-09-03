@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="${title} ?: 'ADMINISTRATION, Application Mobile'">ADMINISTRATION, Application Mobile</title>
+    <link rel="stylesheet" th:href="@{/css/reset.css}"/>
+    <link rel="stylesheet" th:href="@{/css/styles.css}"/>
+    <link rel="stylesheet" th:href="@{/css/Site.css}"/>
+    <link rel="stylesheet" th:href="@{/css/TabControl.css}"/>
+    <link rel="stylesheet" th:href="@{/css/tcal.css}"/>
+    <link rel="stylesheet" th:href="@{/css/dataTable.css}"/>
+    <link rel="stylesheet" th:href="@{/css/newcss.css}"/>
+    <link rel="stylesheet" th:href="@{/css/custom.css}"/>
+    <script th:src="@{/js/frmTab.js}"></script>
+</head>
+</html>

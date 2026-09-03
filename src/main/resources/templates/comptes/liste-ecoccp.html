@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Liste Compte Eco')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Liste Compte Eco</h2>
+    <!-- Port of listecompteco.xhtml. TODO: SPT.COMPTE.DATE_CREATION is an unconfirmed guess -
+         see ComptesReportRepository javadoc. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/comptes/liste-ecoccp}">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}" required="required"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Numero compte</th>
+                <th>Intitule</th>
+                <th>Numero client</th>
+                <th>Date creation</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.intitule}"></td>
+                <td th:text="${item.numeroClient}"></td>
+                <td th:text="${item.dateCreation != null ? #dates.format(item.dateCreation, 'dd/MM/yyyy') : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="4">Il n'y a aucun compte a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

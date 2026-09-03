@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Releve - Parametrage')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2 style="color:#f2693d;">Parametrage de mails</h2>
+
+    <div class="alert-success" th:if="${message}" th:text="${message}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form th:action="@{/releves/parametrage}" th:object="${parametrageForm}" method="post">
+        <div class="form-row">
+            <label for="numcpt">Numero Compte</label>
+            <input type="text" id="numcpt" th:field="*{numerocompte}" maxlength="50" onchange="lookupIntitule()"/>
+            <span id="intitule" style="margin-left:8px; color:#005555; font-weight:bold;"></span>
+        </div>
+
+        <h3>Frequence</h3>
+        <div class="form-row" style="flex-direction:row; flex-wrap:wrap; gap:16px;">
+            <label><input type="checkbox" th:field="*{journalier}"/> Journalier</label>
+            <label><input type="checkbox" th:field="*{hebdomadaire}"/> Hebdomadaire</label>
+            <label><input type="checkbox" th:field="*{quizaine}"/> Quizaine</label>
+            <label><input type="checkbox" th:field="*{mensuel}"/> Mensuel</label>
+            <label><input type="checkbox" th:field="*{trimestre}"/> Trimestriel</label>
+            <label><input type="checkbox" th:field="*{semestre}"/> Semestriel</label>
+        </div>
+
+        <h3>Format</h3>
+        <div class="form-row" style="flex-direction:row; flex-wrap:wrap; gap:16px;">
+            <label><input type="checkbox" th:field="*{pdf}"/> Pdf</label>
+            <label><input type="checkbox" th:field="*{xls}"/> Excel</label>
+            <label><input type="checkbox" th:field="*{afb120}"/> AFB120</label>
+            <label><input type="checkbox" th:field="*{csv}"/> Csv</label>
+        </div>
+
+        <!-- TODO: legacy screen accepted a free-text, comma-separated list of addresses with no
+             validation beyond "not blank" (ReleveCtrl.enrege() just splits on ","); ported as-is. -->
+        <div class="form-row">
+            <label for="email">Mail(s) (separes par une virgule)</label>
+            <textarea id="email" th:field="*{email}" rows="5" cols="45"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">Valider</button>
+            <a th:href="@{/releves/parametrage}">Annuler</a>
+        </div>
+    </form>
+
+    <!-- Ports EtatbeanCtrl/ReleveCtrl.intitulecompte(), fired by a PrimeFaces p:ajax listener in the
+         legacy screen, as a plain fetch() call against GET /releves/intitule. -->
+    <script th:inline="javascript">
+        function lookupIntitule() {
+            var numcpt = document.getElementById('numcpt').value;
+            var out = document.getElementById('intitule');
+            if (!numcpt) { out.textContent = ''; return; }
+            fetch(/*[[@{/releves/intitule}]]*/ '/releves/intitule' + '?numerocompte=' + encodeURIComponent(numcpt))
+                .then(function (r) { return r.ok ? r.text() : ''; })
+                .then(function (text) { out.textContent = text || "Ce Compte n'existe pas!"; });
+        }
+    </script>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

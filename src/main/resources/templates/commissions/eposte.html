@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Commissions EPOSTE')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Report Commission EPOSTE</h2>
+    <!-- Port of comeposte.xhtml. Aggregate of SPT.RECU_ELECTRONIQUE.COM_OPERATION/COM_SPT
+         grouped by origine - see CommissionsReportRepository javadoc. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/commissions/eposte}">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="operateur">Operateur</label>
+            <select id="operateur" name="operateur">
+                <option value="">--Faites un choix--</option>
+                <option value="TMoney" th:selected="${operateur == 'TMoney'}">TMoney</option>
+                <option value="FLooz" th:selected="${operateur == 'FLooz'}">FLooz</option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Origine</th>
+                <th>Nb operations</th>
+                <th>Total montant</th>
+                <th>Total commission</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.label}"></td>
+                <td th:text="${item.count}"></td>
+                <td th:text="${item.totalMontant}"></td>
+                <td th:text="${item.totalCommission}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="4">Aucune commission sur la periode.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

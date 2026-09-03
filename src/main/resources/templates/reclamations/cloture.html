@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Cloturer Reclamations')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Cloturer Reclamation</h2>
+    <!-- Port of clotureRecla.xhtml / ReclaCtrl#cloturer(Reclamations) et #rendreRecla(Reclamations). -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <div style="overflow-x:auto">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Telephone</th>
+                <th>Type</th>
+                <th>Details</th>
+                <th>Date Reclamation</th>
+                <th>Etat</th>
+                <th>Remarques</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${openList}">
+                <td th:text="${item.telClient}"></td>
+                <td th:text="${item.idtype != null ? item.idtype.libellerecla : ''}"></td>
+                <td th:text="${item.motifreclamatin}"></td>
+                <td th:text="${item.datereclamation != null ? #dates.format(item.datereclamation, 'dd/MM/yyyy') : ''}"></td>
+                <td th:text="${item.idetat != null ? item.idetat.libelleetat : ''}"></td>
+                <td>
+                    <form method="post" th:action="@{/reclamations/cloture}" style="display:flex;gap:6px;align-items:center">
+                        <input type="hidden" name="idreclamation" th:value="${item.idreclamation}"/>
+                        <textarea name="remarques" rows="2" cols="20"></textarea>
+                        <button type="submit">Cloturer</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="post" th:action="@{/reclamations/cloture/rendre}">
+                        <input type="hidden" name="idreclamation" th:value="${item.idreclamation}"/>
+                        <button type="submit">Rendre</button>
+                    </form>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(openList)}">
+                <td colspan="7">Il n'y a aucune reclamation a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

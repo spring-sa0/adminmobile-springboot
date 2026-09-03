@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Releve - Modifier')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2 style="color:#f2693d;">Modifier le parametrage</h2>
+
+    <form th:action="@{/releves/liste/{id}/edit(id=${releve.idreleve})}" th:object="${releve}" method="post">
+        <div class="form-row">
+            <label for="numerocompte">Numero Compte</label>
+            <input type="text" id="numerocompte" th:field="*{numerocompte}"/>
+        </div>
+        <div class="form-row">
+            <label for="intitule">Intitule Compte</label>
+            <input type="text" id="intitule" th:field="*{intitule}"/>
+        </div>
+        <div class="form-row">
+            <label for="mail">Mail</label>
+            <input type="text" id="mail" th:field="*{mail}"/>
+        </div>
+        <div class="form-row">
+            <label for="jourenvoi">Frequence</label>
+            <input type="text" id="jourenvoi" th:field="*{jourenvoi}"/>
+        </div>
+        <div class="form-row">
+            <label for="typefichier">Format</label>
+            <input type="text" id="typefichier" th:field="*{typefichier}"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Enregistrer</button>
+            <a th:href="@{/releves/liste}">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

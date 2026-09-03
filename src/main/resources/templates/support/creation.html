@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Creation Support')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Creation support</h2>
+    <!-- Port of creationsupport.xhtml / SupportCtrl#enregSupport(). Admin only (/parametres/**). -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="post" th:action="@{/parametres/creation-support}" th:object="${support}">
+        <div class="form-row">
+            <label for="codeutilisateur">Code Utilisateur</label>
+            <input type="text" id="codeutilisateur" th:field="*{codeutilisateur}" maxlength="25"/>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('codeutilisateur')}" th:errors="*{codeutilisateur}"></span>
+        </div>
+        <div class="form-row">
+            <label for="nomsupport">Nom</label>
+            <input type="text" id="nomsupport" th:field="*{nomsupport}" maxlength="25"/>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('nomsupport')}" th:errors="*{nomsupport}"></span>
+        </div>
+        <div class="form-row">
+            <label for="prenomsupport">Prenom(s)</label>
+            <input type="text" id="prenomsupport" th:field="*{prenomsupport}" maxlength="50"/>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('prenomsupport')}" th:errors="*{prenomsupport}"></span>
+        </div>
+        <div class="form-row">
+            <label for="telephonsupport">Telephone</label>
+            <input type="text" id="telephonsupport" th:field="*{telephonsupport}" maxlength="12"/>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('telephonsupport')}" th:errors="*{telephonsupport}"></span>
+        </div>
+        <div class="form-row">
+            <label for="mailsupport">E-Mail</label>
+            <input type="text" id="mailsupport" th:field="*{mailsupport}" maxlength="50" placeholder="ex: laposte@laposte.tg"/>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('mailsupport')}" th:errors="*{mailsupport}"></span>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Enregistrer</button>
+        </div>
+    </form>
+
+    <h3 style="margin-top:24px">Supports existants</h3>
+    <div style="overflow-x:auto">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Code</th>
+                <th>Nom</th>
+                <th>Prenom(s)</th>
+                <th>Telephone</th>
+                <th>E-Mail</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="s : ${listSupport}">
+                <td th:text="${s.codeutilisateur}"></td>
+                <td th:text="${s.nomsupport}"></td>
+                <td th:text="${s.prenomsupport}"></td>
+                <td th:text="${s.telephonsupport}"></td>
+                <td th:text="${s.mailsupport}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(listSupport)}">
+                <td colspan="5">Il n'y a aucun support a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

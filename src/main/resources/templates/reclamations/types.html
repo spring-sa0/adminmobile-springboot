@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Type Reclamation')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Type Reclamation</h2>
+    <!-- Port of typerecla.xhtml / TypereclaCtrl#enregTypeRecla(). Admin only. -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="post" th:action="@{/reclamations/types}" th:object="${typeReclammation}">
+        <div class="form-row">
+            <label for="libelle">Libelle</label>
+            <input type="text" id="libelle" th:field="*{libellerecla}" maxlength="200"/>
+            <span style="color:#b3261e;font-size:12px" th:if="${#fields.hasErrors('libellerecla')}" th:errors="*{libellerecla}"></span>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Enregistrer</button>
+        </div>
+    </form>
+
+    <h3 style="margin-top:24px">Types existants</h3>
+    <div style="overflow-x:auto">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Libelle</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="t : ${listTypes}">
+                <td th:text="${t.libellerecla}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(listTypes)}">
+                <td>Il n'y a aucun type a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

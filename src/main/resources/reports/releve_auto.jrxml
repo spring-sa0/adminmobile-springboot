@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="releve" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="370d0759-569a-4475-8c7f-aa17a2bd1624">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<style name="Title" fontName="Times New Roman" fontSize="50" isBold="true" pdfFontName="Times-Bold"/>
+	<style name="SubTitle" forecolor="#736343" fontName="Arial" fontSize="18"/>
+	<style name="Column header" forecolor="#666666" fontName="Arial" fontSize="12" isBold="true"/>
+	<style name="Detail" fontName="Arial" fontSize="12"/>
+	<style name="Row" mode="Transparent">
+		<conditionalStyle>
+			<conditionExpression><![CDATA[$V{REPORT_COUNT}%2 == 0]]></conditionExpression>
+			<style backcolor="#E6DAC3"/>
+		</conditionalStyle>
+	</style>
+	<parameter name="numcompte" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["C:\\Releve\\"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select numero_compte, libelle_mvt,montant_debit,date_valeur,sens,montant_credit,libelle_bureau,
+date_valide,solde_prec,sens_prec,nouvo_solde,
+sens_nouvo,date_prec,date_solde,date_creation,
+
+(CASE WHEN rtrim(sens_prec) = 'D' THEN solde_prec
+ELSE null END) solde_prec_d,
+(CASE WHEN rtrim(sens_prec) = 'C' THEN solde_prec
+ELSE null END) solde_prec_c,
+
+(CASE WHEN rtrim(sens_nouvo) = 'D' THEN nouvo_solde
+ELSE null END) nouvo_solde_d,
+(CASE WHEN rtrim(sens_nouvo) = 'C' THEN nouvo_solde
+ELSE null END) nouvo_solde_c
+
+from imobile.mouvement
+order by DATE_CREATION asc]]>
+	</queryString>
+	<field name="NUMERO_COMPTE" class="java.math.BigDecimal"/>
+	<field name="LIBELLE_MVT" class="java.lang.String"/>
+	<field name="MONTANT_DEBIT" class="java.math.BigDecimal"/>
+	<field name="DATE_VALEUR" class="java.sql.Timestamp"/>
+	<field name="SENS" class="java.lang.String"/>
+	<field name="MONTANT_CREDIT" class="java.math.BigDecimal"/>
+	<field name="LIBELLE_BUREAU" class="java.lang.String"/>
+	<field name="DATE_VALIDE" class="java.sql.Timestamp"/>
+	<field name="SOLDE_PREC" class="java.math.BigDecimal"/>
+	<field name="SENS_PREC" class="java.lang.String"/>
+	<field name="NOUVO_SOLDE" class="java.math.BigDecimal"/>
+	<field name="SENS_NOUVO" class="java.lang.String"/>
+	<field name="DATE_PREC" class="java.sql.Timestamp"/>
+	<field name="DATE_SOLDE" class="java.sql.Timestamp"/>
+	<field name="DATE_CREATION" class="java.sql.Timestamp"/>
+	<field name="SOLDE_PREC_D" class="java.math.BigDecimal"/>
+	<field name="SOLDE_PREC_C" class="java.math.BigDecimal"/>
+	<field name="NOUVO_SOLDE_D" class="java.math.BigDecimal"/>
+	<field name="NOUVO_SOLDE_C" class="java.math.BigDecimal"/>
+	<variable name="MONTANT_DEBIT_1" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{MONTANT_DEBIT}]]></variableExpression>
+	</variable>
+	<variable name="MONTANT_CREDIT_1" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[$F{MONTANT_CREDIT}]]></variableExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="83" splitType="Stretch">
+			<line>
+				<reportElement uuid="eb50921c-6c5e-442b-9a79-e71337775a20" x="534" y="76" width="16" height="1"/>
+				<graphicElement>
+					<pen lineWidth="10.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<image>
+				<reportElement uuid="a771cfcb-f6d4-4923-9b80-6bc434ce0be1" stretchType="RelativeToBandHeight" x="42" y="0" width="59" height="45"/>
+				<imageExpression><![CDATA["/Etats/Releve/LogoPoste/logo_poste.jpg"]]></imageExpression>
+			</image>
+			<line>
+				<reportElement uuid="da1d0ced-b3aa-4c5a-a013-a6f2d70910a6" x="454" y="76" width="16" height="1"/>
+				<graphicElement>
+					<pen lineWidth="10.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="0b0037bc-9844-455f-a8c4-247c5bc19f4d" x="508" y="76" width="16" height="1"/>
+				<graphicElement>
+					<pen lineWidth="10.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement uuid="91ac0906-8348-400f-9314-6a5e0e0502e8" x="410" y="16" width="145" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Travail-Liberté-Patrie
+]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="42529b8f-3417-4a63-8979-ccae13a770d3" x="165" y="45" width="228" height="15"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="11" isBold="false" isItalic="true" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Société  des  Postes  du  Togo]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="7663d57f-2ba1-4c59-8434-35cec7c1613b" x="0" y="45" width="141" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="7" isBold="false"/>
+				</textElement>
+				<text><![CDATA[01 B.P. 2626 - Tél. 22 21 44 03  Lomé-Togo]]></text>
+			</staticText>
+			<line>
+				<reportElement uuid="3b021420-ba28-41af-a429-0eb44691ba1a" x="483" y="76" width="16" height="1"/>
+				<graphicElement>
+					<pen lineWidth="10.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="d0349e78-a26a-46de-ab52-8d40256d27cf" x="1" y="76" width="439" height="1"/>
+				<graphicElement>
+					<pen lineWidth="4.0" lineStyle="Solid"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement uuid="20268294-f4a1-440c-8fd7-407b5682d1dd" x="410" y="0" width="145" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[REPUBLIQUE TOGOLAISE
+]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="c4bd9628-2e10-4d92-8f97-d261fc5d26f7" x="165" y="0" width="228" height="45" forecolor="#0033FF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Times New Roman" size="36" isBold="true" isItalic="true" isUnderline="false" pdfFontName="Times-Roman"/>
+				</textElement>
+				<text><![CDATA[LA POSTE
+]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="c6468ddd-baa0-4070-a134-ea35e81a16cb" x="210" y="60" width="141" height="16"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="11" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Centre de Chèques Postaux]]></text>
+			</staticText>
+			<subreport>
+				<reportElement uuid="1a440f00-c197-4543-a40d-13b891df4baf" x="-17" y="57" width="154" height="19"/>
+				<subreportParameter name="SUBREPORT_DIR">
+					<subreportParameterExpression><![CDATA[$P{SUBREPORT_DIR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="numcompte">
+					<subreportParameterExpression><![CDATA[$P{numcompte}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA["/Etats/Releve/entete_releve.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</title>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<columnHeader>
+		<band height="30" splitType="Stretch">
+			<staticText>
+				<reportElement uuid="a68d9eba-d1c0-4a4b-b069-cf32b219ab8c" style="Column header" x="1" y="0" width="62" height="15" forecolor="#333333"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[Date op.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="25978928-532a-4a27-82d8-3046a9a4bc7f" style="Column header" x="63" y="0" width="200" height="15" forecolor="#333333"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[Opération]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="da2855b9-86bd-49e0-a648-760dbdd90faf" style="Column header" x="263" y="0" width="100" height="15" forecolor="#333333"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[Bureau]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="52fc74bb-f01d-4de8-8af8-f46f3af4b94b" style="Column header" x="363" y="0" width="64" height="15" forecolor="#333333"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[Date val.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="63b3bbd6-ece4-49d2-9024-4196118d715b" style="Column header" x="427" y="0" width="64" height="15" forecolor="#333333"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[Débit]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="8e4628c1-fdb2-469e-a530-574bec8a4fed" style="Column header" x="491" y="0" width="64" height="15" forecolor="#333333"/>
+				<box>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="10"/>
+				</textElement>
+				<text><![CDATA[Crédit]]></text>
+			</staticText>
+			<rectangle>
+				<reportElement uuid="4da18e3b-b51a-4b79-8e30-73c3a25b35e9" x="1" y="15" width="554" height="15"/>
+			</rectangle>
+			<staticText>
+				<reportElement uuid="aa42d44c-6997-49c2-8f0f-567312dc6982" x="155" y="16" width="108" height="14"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Solde précédent au :]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="b5a34f9f-6bda-401c-b387-ad194801db12" x="263" y="15" width="164" height="15"/>
+				<box>
+					<leftPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="11" isBold="false"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="0969c7d3-2aef-45d9-8ad9-68b70a6ff2ff" x="427" y="15" width="64" height="15"/>
+				<box>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="11" isBold="false"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement uuid="2fd1eac9-703a-4c52-9688-72bb32809ed3" x="285" y="16" width="108" height="14"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{DATE_PREC}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="#,##0" isBlankWhenNull="true">
+				<reportElement uuid="0133b5d2-3bcc-4101-b916-c396621e2ad6" x="427" y="15" width="63" height="14"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{SOLDE_PREC_D}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="#,##0" isBlankWhenNull="true">
+				<reportElement uuid="3aff55e1-f756-41e2-9359-e56887a03d9f" x="491" y="15" width="63" height="15"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{SOLDE_PREC_C}]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="15" splitType="Stretch">
+			<rectangle>
+				<reportElement uuid="a4482e8c-972b-46a4-ba47-8976e2003d78" stretchType="RelativeToBandHeight" x="1" y="0" width="554" height="15"/>
+			</rectangle>
+			<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement uuid="a3963522-fc9c-4e9b-a7e9-a0882767c124" style="Detail" x="0" y="0" width="64" height="15"/>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{DATE_CREATION}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="de0a0f6c-4306-4773-b6de-636efc41dce5" style="Detail" x="68" y="0" width="195" height="15"/>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{LIBELLE_MVT}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="b72b37ee-8a45-43f0-8406-dadf55306482" style="Detail" x="267" y="0" width="96" height="15"/>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{LIBELLE_BUREAU}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement uuid="c65d6d04-2e7b-4c0f-a735-68be9ff2416f" x="491" y="0" width="64" height="15"/>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{MONTANT_CREDIT}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement uuid="a34336e0-26b9-4c46-910c-a456fafacaf8" x="427" y="0" width="63" height="15"/>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{MONTANT_DEBIT}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement uuid="8d9c920e-267f-4656-ad8d-179d1fc6304c" x="363" y="0" width="64" height="15"/>
+				<box>
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{DATE_VALEUR}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="17">
+			<textField>
+				<reportElement uuid="ba563971-b6d8-41fd-9384-52776db5d8d6" x="435" y="0" width="80" height="17"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" /"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement uuid="8aae7fb3-1b64-4cba-be05-3a6380e4a0d6" x="515" y="0" width="40" height="17"/>
+				<textElement/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="96" splitType="Stretch">
+			<rectangle>
+				<reportElement uuid="4d20e6aa-a587-4b3e-aa57-ecda368c4377" x="0" y="2" width="555" height="20"/>
+			</rectangle>
+			<rectangle>
+				<reportElement uuid="3e07dafb-83af-4f86-a230-3c3c812a1307" x="0" y="22" width="555" height="20"/>
+			</rectangle>
+			<rectangle>
+				<reportElement uuid="21332823-4b4b-409d-8cde-166c78993333" x="0" y="42" width="555" height="20"/>
+			</rectangle>
+			<rectangle>
+				<reportElement uuid="b49b1d39-6ce2-438a-a0f3-1a647e9f44be" x="0" y="62" width="555" height="28"/>
+			</rectangle>
+			<staticText>
+				<reportElement uuid="f611e7cb-ed01-4ab4-8d0c-10eba1aa399b" x="95" y="2" width="92" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Totaux]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="433b9de2-5325-4372-b73c-39f5165f6b3b" x="95" y="22" width="92" height="20"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[Nouveau solde au:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="61898fe7-4746-4769-aedf-17bbd9249716" x="0" y="62" width="555" height="28"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<text><![CDATA[SAUF ERREUR OU OMISSION. Conformément à l'usage et sauf observation de votre part dans un delai de 1 mois à votre agence, nous considérons que vous avez approuvé le présent document ainsi que le nouveau solde qui en résulte.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="c5941934-07e3-4e7e-8932-136f322cb624" x="427" y="22" width="64" height="20"/>
+				<box>
+					<leftPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="11" isBold="false"/>
+				</textElement>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<textField pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement uuid="d5cc5d94-c7c1-4491-8156-92fe2ff0176b" x="288" y="22" width="108" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{DATE_SOLDE}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement uuid="c2cbb0e0-ee3f-4fec-8540-2f9fd4df2129" x="427" y="2" width="64" height="20"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{MONTANT_DEBIT_1}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0" isBlankWhenNull="true">
+				<reportElement uuid="6f6c2bb3-3882-4268-a57b-9424f402c3c5" x="491" y="2" width="63" height="20"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$V{MONTANT_CREDIT_1}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="#,##0" isBlankWhenNull="true">
+				<reportElement uuid="cb6c41a3-df5d-4a90-a71e-fbf1f936a1a0" x="427" y="22" width="64" height="20"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{NOUVO_SOLDE_D}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="#,##0" isBlankWhenNull="true">
+				<reportElement uuid="1f6e5f82-13e5-4d80-9f22-0e503075cf46" x="491" y="22" width="63" height="20"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{NOUVO_SOLDE_C}]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

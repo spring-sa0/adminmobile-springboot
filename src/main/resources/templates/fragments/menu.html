@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<!--
+  Portage de web/menu.xhtml (p:menubar PrimeFaces).
+  Correspondance des attributs "rendered" JSF -> autorites Spring Security :
+    Userconnexion.profilmenu     -> hasAuthority('PROFIL_MENU')
+    Userconnexion.profiluser     -> hasAuthority('PROFIL_USER')
+    Userconnexion.profilsousmenu -> hasAuthority('PROFIL_SOUSMENU')
+    Userconnexion.marchand       -> hasAuthority('MARCHAND')
+  Certains liens pointent vers des modules pas encore portes (voir backlog) : ils
+  renverront un 404 tant que le controller correspondant n'existe pas.
+-->
+<nav th:fragment="menu" class="admin-menu">
+    <div class="page">
+        <div class="header">
+            <div class="title">
+                <h1>ADMINISTRATION, Applications Mobiles (EcoCCP, E-Poste)</h1>
+            </div>
+            <div class="loginDisplay">
+                <a th:href="@{/}"><img th:src="@{/images/logo_poste.png}" alt="La Poste"/></a>
+                <span sec:authentication="name"></span>
+                &#160;|&#160;
+                <form th:action="@{/logout}" method="post" style="display:inline">
+                    <button type="submit" class="link-button">Quitter</button>
+                </form>
+            </div>
+        </div>
+
+        <ul class="menubar">
+            <li sec:authorize="hasAuthority('PROFIL_MENU')">
+                <span>Parametres</span>
+                <ul>
+                    <li><a th:href="@{/parametres/modif-profil}">Modif Profil</a></li>
+                    <li><a th:href="@{/parametres/modif-password}">Modif password</a></li>
+                    <li><a th:href="@{/parametres/modif-email}">Modif email</a></li>
+                    <li><a th:href="@{/parametres/creation-support}">Creation support</a></li>
+                    <li><a th:href="@{/reclamations/types}">Type Reclamation</a></li>
+                    <li><a th:href="@{/parametres/activer-desactiver}">Activer/Desactiver</a></li>
+                </ul>
+            </li>
+
+            <li sec:authorize="hasAuthority('PROFIL_USER')">
+                <span>Reclamations</span>
+                <ul>
+                    <li><a th:href="@{/reclamations}">Reclamations</a></li>
+                    <li><a th:href="@{/reclamations/affectation}">Affectation</a></li>
+                    <li><a th:href="@{/reclamations/cloture}">Cloturer</a></li>
+                </ul>
+            </li>
+
+            <li sec:authorize="hasAuthority('PROFIL_USER')">
+                <span>Suggestions</span>
+                <ul>
+                    <li><a th:href="@{/suggestions}">Suggestions</a></li>
+                </ul>
+            </li>
+
+            <li sec:authorize="hasAuthority('PROFIL_USER')">
+                <span>Consultations</span>
+                <ul>
+                    <li><a th:href="@{/consultations/operations}">Consultation des Operations</a></li>
+                    <li><a th:href="@{/consultations/operation}">Operations par Numero op</a></li>
+                    <li><a th:href="@{/operations/liste}">Operations par periode</a></li>
+                    <li><a th:href="@{/comptes/lies}">Liste Compte(s) lie(s)</a></li>
+                </ul>
+            </li>
+
+            <li sec:authorize="hasAuthority('PROFIL_MENU')">
+                <span>Annulation Op EcoCCP</span>
+                <ul>
+                    <li><a th:href="@{/annulation-op/annuler}">Annul Op EcoCCP</a></li>
+                    <li><a th:href="@{/annulation-op/restaurer}">Restaurer Op</a></li>
+                </ul>
+            </li>
+
+            <li sec:authorize="hasAuthority('PROFIL_USER')">
+                <span>Etats</span>
+                <ul>
+                    <li>
+                        <span>Transactions</span>
+                        <ul>
+                            <li><a th:href="@{/etats/transactions/bank-to-wallet}">Bank To Wallet</a></li>
+                            <li><a th:href="@{/etats/transactions/wallet-to-bank}">Wallet To Bank</a></li>
+                            <li><a th:href="@{/etats/transactions/bank-to-bank}">Bank To Bank</a></li>
+                            <li><a th:href="@{/etats/transactions/compte-a-compte}">Compte a Compte</a></li>
+                            <li><a th:href="@{/etats/transactions/retrait}">Retrait</a></li>
+                            <li><a th:href="@{/etats/transactions/depot}">Depot</a></li>
+                            <li><a th:href="@{/etats/transactions/global}">Global</a></li>
+                            <li><a th:href="@{/etats/transactions/ecoccp}">Liste des Op EcoCCP</a></li>
+                            <li><a th:href="@{/etats/transactions/ecoccp-annulees}">Liste des Op Annul</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <span>Comptes</span>
+                        <ul>
+                            <li><a th:href="@{/comptes/nombre}">Nombre de Comptes</a></li>
+                            <li><a th:href="@{/comptes/liste-ecoccp}">Liste Comptes EcoCCP</a></li>
+                            <li><a th:href="@{/comptes/actifs}">Comptes actifs</a></li>
+                            <li><a th:href="@{/comptes/solde}">Solde compte</a></li>
+                            <li><a th:href="@{/comptes/liste-solde}">Liste Solde compte</a></li>
+                            <li><a th:href="@{/comptes/negatifs}">Compte negatif</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <span>Eposte</span>
+                        <ul>
+                            <li><a th:href="@{/eposte/comptes-lies}">Liste Comptes Lies</a></li>
+                            <li><a th:href="@{/eposte/operations}">Liste des Operations</a></li>
+                            <li><a th:href="@{/eposte/operations-client}">Operations par Client</a></li>
+                            <li><a th:href="@{/eposte/operations-compte}">Operations par Compte</a></li>
+                            <li><a th:href="@{/eposte/comptes-op-effectuees}">Comptes ayant effectues op</a></li>
+                            <li><a th:href="@{/eposte/comptes-op-non-effectuees}">Comptes n'ayant pas effectues op</a></li>
+                            <li><a th:href="@{/eposte/souscription}">Souscription</a></li>
+                            <li><a th:href="@{/eposte/chequiers}">Liste des Chequiers</a></li>
+                            <li><a th:href="@{/eposte/modif-pwd}">Liste passe modif</a></li>
+                            <li><a th:href="@{/eposte/achats-credit}">Liste achat credit</a></li>
+                            <li><a th:href="@{/eposte/comptes-desactives}">Compte desactive</a></li>
+                            <li>
+                                <span>Recap operations</span>
+                                <ul>
+                                    <li><a th:href="@{/eposte/recap/client}">Client</a></li>
+                                    <li><a th:href="@{/eposte/recap/compte}">Compte</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <span>Recap global</span>
+                                <ul>
+                                    <li><a th:href="@{/eposte/recap-global/produit}">Produit</a></li>
+                                    <li><a th:href="@{/eposte/recap-global/souscriptions}">Souscriptions</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <span>Operations</span>
+                        <ul>
+                            <li><a th:href="@{/operations/par-client}">Par Client</a></li>
+                            <li><a th:href="@{/operations/par-compte}">Par Compte</a></li>
+                        </ul>
+                    </li>
+                    <li><a th:href="@{/reclamations/liste}">Liste reclamations</a></li>
+                    <li><a th:href="@{/suggestions/liste}">Liste Suggestions</a></li>
+                    <li>
+                        <span>Commissions</span>
+                        <ul>
+                            <li><a th:href="@{/commissions/ecoccp}">ECOCCP</a></li>
+                            <li><a th:href="@{/commissions/eposte}">EPOSTE</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+
+            <li sec:authorize="hasAuthority('PROFIL_SOUSMENU')">
+                <span>Releve</span>
+                <ul>
+                    <li><a th:href="@{/releves/excel-afb120}">Excel, AFB120</a></li>
+                    <li><a th:href="@{/releves/excel-togocel}">Excel, TOGOCEL</a></li>
+                    <li><a th:href="@{/releves/parametrage}">Parametrage Releve</a></li>
+                    <li><a th:href="@{/releves/liste}">Liste Releves</a></li>
+                </ul>
+            </li>
+
+            <li sec:authorize="hasAuthority('PROFIL_MENU')">
+                <span>Gateway</span>
+                <ul>
+                    <li><a th:href="@{/gateway/liste}">Liste op</a></li>
+                </ul>
+            </li>
+
+            <li sec:authorize="hasAuthority('MARCHAND')">
+                <span>Marchand</span>
+                <ul>
+                    <li><a th:href="@{/marchand/parametrage}">Parametrage Marchand</a></li>
+                    <li><a th:href="@{/marchand/activer-desactiver}">Active/Desactive Marchand</a></li>
+                    <li><a th:href="@{/marchand/comptes}">Liste Compte Marchand</a></li>
+                    <li><a th:href="@{/marchand/operations}">Liste op</a></li>
+                    <li><a th:href="@{/marchand/operations-liste}">Liste op Marchand</a></li>
+                    <li><a th:href="@{/marchand/operations-par-marchand}">Liste op par Marchand</a></li>
+                    <li><a th:href="@{/marchand/commissions}">Commission Marchand</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</nav>
+</body>
+</html>

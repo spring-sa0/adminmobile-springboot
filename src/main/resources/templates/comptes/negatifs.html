@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Compte Eco Debiteur')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Compte Eco Debiteur</h2>
+    <!-- Port of comptenegatif.xhtml ("Compte Eco Debiteur"): the legacy screen has no date
+         fields (just a "GENERER" button), so this always shows every currently-negative account,
+         from each account's most recent SOLDE_APRES. -->
+
+    <div style="overflow-x:auto">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Numero compte</th>
+                <th>Intitule</th>
+                <th>Solde</th>
+                <th>Date derniere operation</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.intitule}"></td>
+                <td th:text="${item.solde}"></td>
+                <td th:text="${item.dateOperation != null ? #dates.format(item.dateOperation, 'dd/MM/yyyy HH:mm:ss') : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="4">Aucun compte debiteur.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

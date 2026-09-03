@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Parametrage de Marchand')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Parametrage de marchand</h2>
+    <!-- Port of paramarchand.xhtml / UserCtrl2#afficheruser()+intitulecompte()+paramarchand(). Gated to MARCHAND authority. -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/marchand/parametrage}">
+        <div class="form-row">
+            <label for="telephone">Telephone</label>
+            <input type="text" id="telephone" name="telephone" th:value="${telephone}" maxlength="8" required="required"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <!-- Numero-compte holder lookup, plain-form equivalent of the legacy AJAX "change" listener. -->
+    <form method="get" th:action="@{/marchand/parametrage}" style="margin-top:16px">
+        <input type="hidden" name="telephone" th:value="${telephone}"/>
+        <div class="form-row">
+            <label for="numerocompte">Numero compte</label>
+            <input type="text" id="numerocompte" name="numerocompte" th:value="${numerocompte}"/>
+            <span th:if="${intitule}" th:text="${intitule}"></span>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Verifier compte</button>
+        </div>
+    </form>
+
+    <form method="post" th:action="@{/marchand/parametrage}" style="margin-top:16px">
+        <input type="hidden" name="telephone" th:value="${telephone}"/>
+        <input type="hidden" name="numerocompte" th:value="${numerocompte}"/>
+        <div class="form-actions">
+            <button type="submit">Enregistrer</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto;margin-top:20px" th:if="${candidates != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Prenom</th>
+                <th>Telephone</th>
+                <th>Derniere Connexion</th>
+                <th>Mail</th>
+                <th>Etat Compte</th>
+                <th>Numero compte</th>
+                <th>Profil</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${candidates}">
+                <td th:text="${item.nom}"></td>
+                <td th:text="${item.prenom}"></td>
+                <td th:text="${item.telephone}"></td>
+                <td th:text="${item.dateconnexion != null} ? ${#dates.format(item.dateconnexion, 'dd/MM/yyyy HH:mm:ss')} : ''"></td>
+                <td th:text="${item.mail}"></td>
+                <td th:text="${item.errCode}"></td>
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.idprofil != null ? item.idprofil.libelle : ''}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(candidates)}">
+                <td colspan="8">Il n'y a aucun client a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

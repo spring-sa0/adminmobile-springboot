@@ -1,0 +1,57 @@
+/* HTML Tab Class
+Author : Vinay R. Indoria
+Dated  : 04 July 2005
+*/
+
+.clsInactiveTab
+{
+text-align: center;
+border-left : #000000 1px solid;
+border-right : #000000 1px solid;
+border-top : #000000 1px solid;
+border-bottom : #000000 1px solid;
+background-color:#FFFFFF;
+cursor:pointer;
+}
+
+.clsActiveTab
+{
+text-align: center;
+font-weight: bold ;
+border-left : #000000 1px solid;
+border-right : #000000 1px solid;
+border-top : #000000 1px solid;
+background-color:#FFFFFF;
+cursor:pointer;
+}
+
+.clsTabWorkarea
+{
+border-left : #000000 1px solid;
+border-right : #000000 1px solid;
+border-bottom : #000000 1px solid;
+background-color:#FFFFFF;
+}
+
+.clsWorkArea
+{
+border-left : #000000 1px solid;
+border-right : #000000 1px solid;
+border-bottom : #000000 1px solid;
+border-right-style: solid;
+border-left-style: solid;
+/*border-top-style: none;*/
+border-bottom-style: solid;
+background-color:#FFFFFF;
+}
+
+.clsTabSeprator{
+border-bottom : #000000 1px solid;
+border-top : #FFFFFF 1px solid;
+}
+
+
+
+/*
+Tab Control class end
+*/

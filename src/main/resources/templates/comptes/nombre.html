@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Nombre Compte Eco')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Nombre Compte Eco</h2>
+    <!-- Port of nbrecpteco.xhtml: legacy screen only triggered a Jasper PDF export (no
+         on-screen table); see ComptesReportRepository for the count query's provenance.
+         TODO: SPT.COMPTE.DATE_CREATION is an unconfirmed guess. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/comptes/nombre}">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}" required="required"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div th:if="${total != null}">
+        <h3>Nombre de comptes EcoCCP crees sur la periode : <span th:text="${total}"></span></h3>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

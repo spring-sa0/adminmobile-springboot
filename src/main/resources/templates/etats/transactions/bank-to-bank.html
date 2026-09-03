@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Report Bank To Bank')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Report Bank To Bank</h2>
+    <!-- Port of bb.xhtml (and bbmoov.xhtml, its FLooz-only variant - toggle the Operateur
+         select to FLooz to get the same result). Faithful port of the original Jasper report
+         SQL recovered from web/state/banbankxls.jrxml / banbankfloozxls.jrxml -
+         see BankToBankReportRepository. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/etats/transactions/bank-to-bank}">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="operateur">Operateur</label>
+            <select id="operateur" name="operateur">
+                <option value="TMoney" th:selected="${operateur == null or operateur == 'TMoney'}">TMoney</option>
+                <option value="FLooz" th:selected="${operateur == 'FLooz'}">FLooz</option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Refbank</th>
+                <th>Compte</th>
+                <th>Montant</th>
+                <th>Telephone</th>
+                <th>Beneficiaire</th>
+                <th>Type Operation</th>
+                <th>Date operation</th>
+                <th>Code Operation</th>
+                <th>Numero operation</th>
+                <th>Intitule</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.refbank}"></td>
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.montant}"></td>
+                <td th:text="${item.telephone}"></td>
+                <td th:text="${item.beneficiaire}"></td>
+                <td th:text="${item.typeOperation}"></td>
+                <td th:text="${item.dateOperation != null ? #dates.format(item.dateOperation, 'dd/MM/yyyy HH:mm:ss') : ''}"></td>
+                <td th:text="${item.codeOperation}"></td>
+                <td th:text="${item.numeroOperation}"></td>
+                <td th:text="${item.intitule}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="10">Il n'y a aucune operation a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

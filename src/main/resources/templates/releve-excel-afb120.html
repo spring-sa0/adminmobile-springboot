@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Releve - Excel AFB120')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2 style="color:#f2693d;">Releve de compte (Excel / AFB120)</h2>
+
+    <form th:action="@{/releves/excel-afb120/excel}" th:object="${releveExportForm}" method="post" id="releveForm">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" th:field="*{datedebut}"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" th:field="*{datefin}"/>
+        </div>
+        <div class="form-row">
+            <label for="numcpt">Numero Compte</label>
+            <input type="text" id="numcpt" th:field="*{numerocompte}" maxlength="50" onchange="lookupIntitule()"/>
+            <span id="intitule" style="margin-left:8px; color:#005555; font-weight:bold;"></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" th:formaction="@{/releves/excel-afb120/excel}">Export excel</button>
+            <button type="submit" th:formaction="@{/releves/excel-afb120/afb120}">Export AFB120</button>
+        </div>
+    </form>
+
+    <!-- Ports EtatbeanCtrl.intitulecompte(), fired by a PrimeFaces p:ajax listener in relevexcel.xhtml. -->
+    <script th:inline="javascript">
+        function lookupIntitule() {
+            var numcpt = document.getElementById('numcpt').value;
+            var out = document.getElementById('intitule');
+            if (!numcpt) { out.textContent = ''; return; }
+            fetch(/*[[@{/releves/intitule}]]*/ '/releves/intitule' + '?numerocompte=' + encodeURIComponent(numcpt))
+                .then(function (r) { return r.ok ? r.text() : ''; })
+                .then(function (text) { out.textContent = text || "Ce Compte n'existe pas!"; });
+        }
+    </script>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
