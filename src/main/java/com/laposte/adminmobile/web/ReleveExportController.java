@@ -42,8 +42,8 @@ import java.util.Map;
  * suggested relevexcel/relevetgcel rendered banbankxls.jrxml/banbankfloozxls.jrxml/op_togocel.jrxml.
  * Reading the actual legacy wiring - relevexcel.xhtml's and relevetgcel.xhtml's command buttons
  * call {@code etatbeanCtrl.etatrelevexcel()}/{@code etatrelevetgcel()}, never anything touching
- * banbank*/op_togocel - shows those two screens actually render releve_client1.jrxml and
- * releve_solde.jrxml. The three banbank*/op_togocel reports are used elsewhere in EtatbeanCtrl
+ * banbankop_togocel - shows those two screens actually render releve_client1.jrxml and
+ * releve_solde.jrxml. The three banbank op_togocel reports are used elsewhere in EtatbeanCtrl
  * (separate bank-to-bank / TOGOCEL *operation listing* screens under the "Etats" menu, not part of
  * this module and not yet ported) and are not reachable from either page here. Ported per the
  * verified actual behaviour; the three unused .jrxml files stay in resources/reports/ for whichever

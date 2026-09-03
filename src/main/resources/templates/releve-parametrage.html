@@ -13,9 +13,25 @@
     <form th:action="@{/releves/parametrage}" th:object="${parametrageForm}" method="post">
         <div class="form-row">
             <label for="numcpt">Numero Compte</label>
-            <input type="text" id="numcpt" th:field="*{numerocompte}" maxlength="50" onchange="lookupIntitule()"/>
-            <span id="intitule" style="margin-left:8px; color:#005555; font-weight:bold;"></span>
+            <input type="text" id="numcpt" th:field="*{numerocompte}" maxlength="50"
+                   onchange="lookupIntitule()"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault(); lookupIntitule();}"/>
         </div>
+
+        <table class="data-table" id="intituleTable" style="max-width:520px; margin:-6px 0 20px; display:none;">
+            <thead>
+            <tr>
+                <th>Numero de compte</th>
+                <th>Intitule</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td id="intituleNumcpt"></td>
+                <td id="intituleValue"></td>
+            </tr>
+            </tbody>
+        </table>
 
         <h3>Frequence</h3>
         <div class="form-row" style="flex-direction:row; flex-wrap:wrap; gap:16px;">
@@ -48,16 +64,41 @@
         </div>
     </form>
 
-    <!-- Ports EtatbeanCtrl/ReleveCtrl.intitulecompte(), fired by a PrimeFaces p:ajax listener in the
-         legacy screen, as a plain fetch() call against GET /releves/intitule. -->
+    <!-- Ports EtatbeanCtrl/ReleveCtrl.intitulecompte(), fired par un p:ajax listener dans l'ecran
+         d'origine, sous forme d'un fetch() contre GET /releves/intitule. Le resultat est affiche
+         dans un tableau (#intituleTable) au lieu d'un simple texte a cote du champ. -->
     <script th:inline="javascript">
         function lookupIntitule() {
-            var numcpt = document.getElementById('numcpt').value;
-            var out = document.getElementById('intitule');
-            if (!numcpt) { out.textContent = ''; return; }
+            var numcpt = document.getElementById('numcpt').value.trim();
+            var table = document.getElementById('intituleTable');
+            var numCell = document.getElementById('intituleNumcpt');
+            var valCell = document.getElementById('intituleValue');
+
+            if (!numcpt) {
+                table.style.display = 'none';
+                return;
+            }
+
+            numCell.textContent = numcpt;
+            valCell.textContent = 'Recherche...';
+            valCell.style.color = '';
+            table.style.display = '';
+
             fetch(/*[[@{/releves/intitule}]]*/ '/releves/intitule' + '?numerocompte=' + encodeURIComponent(numcpt))
                 .then(function (r) { return r.ok ? r.text() : ''; })
-                .then(function (text) { out.textContent = text || "Ce Compte n'existe pas!"; });
+                .then(function (text) {
+                    if (text) {
+                        valCell.textContent = text;
+                        valCell.style.color = '';
+                    } else {
+                        valCell.textContent = "Ce compte n'existe pas !";
+                        valCell.style.color = 'var(--danger)';
+                    }
+                })
+                .catch(function () {
+                    valCell.textContent = 'Erreur lors de la recherche';
+                    valCell.style.color = 'var(--danger)';
+                });
         }
     </script>
 </div>

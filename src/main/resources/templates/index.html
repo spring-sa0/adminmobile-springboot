@@ -1,13 +1,44 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/head :: head('ADMINISTRATION, Application Mobile')}"></head>
 <body>
 <div th:replace="~{fragments/menu :: menu}"></div>
 
 <div class="mainDiv">
-    <h2>Bienvenue</h2>
-    <p>Portail d'administration des applications mobiles (EcoCCP, e-poste, Flooz, T-Money).</p>
-    <p>Utilisez le menu ci-dessus pour acceder aux differents modules.</p>
+    <div class="dashboard-hero">
+        <h2>Bienvenue</h2>
+        <p>Portail d'administration des applications mobiles (EcoCCP, e-poste, Flooz, T-Money).
+            Utilisez la barre laterale pour naviguer, ou la recherche en haut de la barre pour
+            retrouver rapidement un ecran.</p>
+    </div>
+
+    <h3>Acces rapide</h3>
+    <div class="tile-grid">
+        <a class="tile" th:href="@{/comptes/solde}" sec:authorize="hasAuthority('PROFIL_USER')">
+            <strong>Comptes</strong>
+            <span>Solde, comptes actifs, comptes negatifs</span>
+        </a>
+        <a class="tile" th:href="@{/operations/liste}" sec:authorize="hasAuthority('PROFIL_USER')">
+            <strong>Operations</strong>
+            <span>Consultation et suivi des transactions</span>
+        </a>
+        <a class="tile" th:href="@{/reclamations}" sec:authorize="hasAuthority('PROFIL_USER')">
+            <strong>Reclamations</strong>
+            <span>Enregistrer, affecter, cloturer</span>
+        </a>
+        <a class="tile" th:href="@{/releves/liste}" sec:authorize="hasAuthority('PROFIL_SOUSMENU')">
+            <strong>Releves</strong>
+            <span>Liste des releves et exports</span>
+        </a>
+        <a class="tile" th:href="@{/marchand/comptes}" sec:authorize="hasAuthority('MARCHAND')">
+            <strong>Marchand</strong>
+            <span>Comptes et operations marchands</span>
+        </a>
+        <a class="tile" th:href="@{/parametres/modif-profil}" sec:authorize="hasAuthority('PROFIL_MENU')">
+            <strong>Parametres</strong>
+            <span>Profil, mot de passe, support</span>
+        </a>
+    </div>
 </div>
 
 <div th:replace="~{fragments/footer :: footer}"></div>

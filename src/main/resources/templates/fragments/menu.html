@@ -1,84 +1,72 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
-<!--
-  Portage de web/menu.xhtml (p:menubar PrimeFaces).
-  Correspondance des attributs "rendered" JSF -> autorites Spring Security :
-    Userconnexion.profilmenu     -> hasAuthority('PROFIL_MENU')
-    Userconnexion.profiluser     -> hasAuthority('PROFIL_USER')
-    Userconnexion.profilsousmenu -> hasAuthority('PROFIL_SOUSMENU')
-    Userconnexion.marchand       -> hasAuthority('MARCHAND')
-  Certains liens pointent vers des modules pas encore portes (voir backlog) : ils
-  renverront un 404 tant que le controller correspondant n'existe pas.
--->
-<nav th:fragment="menu" class="admin-menu">
-    <div class="page">
-        <div class="header">
-            <div class="title">
-                <h1>ADMINISTRATION, Applications Mobiles (EcoCCP, E-Poste)</h1>
-            </div>
-            <div class="loginDisplay">
-                <a th:href="@{/}"><img th:src="@{/images/logo_poste.png}" alt="La Poste"/></a>
-                <span sec:authentication="name"></span>
-                &#160;|&#160;
-                <form th:action="@{/logout}" method="post" style="display:inline">
-                    <button type="submit" class="link-button">Quitter</button>
-                </form>
-            </div>
-        </div>
+<aside th:fragment="menu" class="sidebar">
+    <div class="sidebar-brand">
+        <img th:src="@{/images/logo_poste.png}" alt="La Poste"/>
+        <span class="sidebar-brand-text">
+            <strong>ADMINISTRATION</strong>
+            <span>EcoCCP &middot; E-Poste</span>
+        </span>
+    </div>
 
-        <ul class="menubar">
-            <li sec:authorize="hasAuthority('PROFIL_MENU')">
-                <span>Parametres</span>
-                <ul>
-                    <li><a th:href="@{/parametres/modif-profil}">Modif Profil</a></li>
-                    <li><a th:href="@{/parametres/modif-password}">Modif password</a></li>
-                    <li><a th:href="@{/parametres/modif-email}">Modif email</a></li>
-                    <li><a th:href="@{/parametres/creation-support}">Creation support</a></li>
-                    <li><a th:href="@{/reclamations/types}">Type Reclamation</a></li>
-                    <li><a th:href="@{/parametres/activer-desactiver}">Activer/Desactiver</a></li>
-                </ul>
-            </li>
+    <div class="sidebar-search">
+        <input type="search" id="navSearch" placeholder="Rechercher un ecran..." autocomplete="off"/>
+    </div>
 
-            <li sec:authorize="hasAuthority('PROFIL_USER')">
-                <span>Reclamations</span>
-                <ul>
-                    <li><a th:href="@{/reclamations}">Reclamations</a></li>
-                    <li><a th:href="@{/reclamations/affectation}">Affectation</a></li>
-                    <li><a th:href="@{/reclamations/cloture}">Cloturer</a></li>
-                </ul>
-            </li>
+    <nav class="sidebar-nav" id="sidebarNav">
+        <details sec:authorize="hasAuthority('PROFIL_MENU')">
+            <summary>Parametres</summary>
+            <ul>
+                <li><a th:href="@{/parametres/modif-profil}">Modif Profil</a></li>
+                <li><a th:href="@{/parametres/modif-password}">Modif password</a></li>
+                <li><a th:href="@{/parametres/modif-email}">Modif email</a></li>
+                <li><a th:href="@{/parametres/creation-support}">Creation support</a></li>
+                <li><a th:href="@{/reclamations/types}">Type Reclamation</a></li>
+                <li><a th:href="@{/parametres/activer-desactiver}">Activer/Desactiver</a></li>
+            </ul>
+        </details>
 
-            <li sec:authorize="hasAuthority('PROFIL_USER')">
-                <span>Suggestions</span>
-                <ul>
-                    <li><a th:href="@{/suggestions}">Suggestions</a></li>
-                </ul>
-            </li>
+        <details sec:authorize="hasAuthority('PROFIL_USER')">
+            <summary>Reclamations</summary>
+            <ul>
+                <li><a th:href="@{/reclamations}">Reclamations</a></li>
+                <li><a th:href="@{/reclamations/affectation}">Affectation</a></li>
+                <li><a th:href="@{/reclamations/cloture}">Cloturer</a></li>
+            </ul>
+        </details>
 
-            <li sec:authorize="hasAuthority('PROFIL_USER')">
-                <span>Consultations</span>
-                <ul>
-                    <li><a th:href="@{/consultations/operations}">Consultation des Operations</a></li>
-                    <li><a th:href="@{/consultations/operation}">Operations par Numero op</a></li>
-                    <li><a th:href="@{/operations/liste}">Operations par periode</a></li>
-                    <li><a th:href="@{/comptes/lies}">Liste Compte(s) lie(s)</a></li>
-                </ul>
-            </li>
+        <details sec:authorize="hasAuthority('PROFIL_USER')">
+            <summary>Suggestions</summary>
+            <ul>
+                <li><a th:href="@{/suggestions}">Suggestions</a></li>
+            </ul>
+        </details>
 
-            <li sec:authorize="hasAuthority('PROFIL_MENU')">
-                <span>Annulation Op EcoCCP</span>
-                <ul>
-                    <li><a th:href="@{/annulation-op/annuler}">Annul Op EcoCCP</a></li>
-                    <li><a th:href="@{/annulation-op/restaurer}">Restaurer Op</a></li>
-                </ul>
-            </li>
+        <details sec:authorize="hasAuthority('PROFIL_USER')">
+            <summary>Consultations</summary>
+            <ul>
+                <li><a th:href="@{/consultations/operations}">Consultation des Operations</a></li>
+                <li><a th:href="@{/consultations/operation}">Operations par Numero op</a></li>
+                <li><a th:href="@{/operations/liste}">Operations par periode</a></li>
+                <li><a th:href="@{/comptes/lies}">Liste Compte(s) lie(s)</a></li>
+            </ul>
+        </details>
 
-            <li sec:authorize="hasAuthority('PROFIL_USER')">
-                <span>Etats</span>
-                <ul>
-                    <li>
-                        <span>Transactions</span>
+        <details sec:authorize="hasAuthority('PROFIL_MENU')">
+            <summary>Annulation Op EcoCCP</summary>
+            <ul>
+                <li><a th:href="@{/annulation-op/annuler}">Annul Op EcoCCP</a></li>
+                <li><a th:href="@{/annulation-op/restaurer}">Restaurer Op</a></li>
+            </ul>
+        </details>
+
+        <details sec:authorize="hasAuthority('PROFIL_USER')">
+            <summary>Etats</summary>
+            <ul>
+                <li>
+                    <details>
+                        <summary>Transactions</summary>
                         <ul>
                             <li><a th:href="@{/etats/transactions/bank-to-wallet}">Bank To Wallet</a></li>
                             <li><a th:href="@{/etats/transactions/wallet-to-bank}">Wallet To Bank</a></li>
@@ -90,9 +78,11 @@
                             <li><a th:href="@{/etats/transactions/ecoccp}">Liste des Op EcoCCP</a></li>
                             <li><a th:href="@{/etats/transactions/ecoccp-annulees}">Liste des Op Annul</a></li>
                         </ul>
-                    </li>
-                    <li>
-                        <span>Comptes</span>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>Comptes</summary>
                         <ul>
                             <li><a th:href="@{/comptes/nombre}">Nombre de Comptes</a></li>
                             <li><a th:href="@{/comptes/liste-ecoccp}">Liste Comptes EcoCCP</a></li>
@@ -101,9 +91,11 @@
                             <li><a th:href="@{/comptes/liste-solde}">Liste Solde compte</a></li>
                             <li><a th:href="@{/comptes/negatifs}">Compte negatif</a></li>
                         </ul>
-                    </li>
-                    <li>
-                        <span>Eposte</span>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>Eposte</summary>
                         <ul>
                             <li><a th:href="@{/eposte/comptes-lies}">Liste Comptes Lies</a></li>
                             <li><a th:href="@{/eposte/operations}">Liste des Operations</a></li>
@@ -117,71 +109,137 @@
                             <li><a th:href="@{/eposte/achats-credit}">Liste achat credit</a></li>
                             <li><a th:href="@{/eposte/comptes-desactives}">Compte desactive</a></li>
                             <li>
-                                <span>Recap operations</span>
-                                <ul>
-                                    <li><a th:href="@{/eposte/recap/client}">Client</a></li>
-                                    <li><a th:href="@{/eposte/recap/compte}">Compte</a></li>
-                                </ul>
+                                <details>
+                                    <summary>Recap operations</summary>
+                                    <ul>
+                                        <li><a th:href="@{/eposte/recap/client}">Client</a></li>
+                                        <li><a th:href="@{/eposte/recap/compte}">Compte</a></li>
+                                    </ul>
+                                </details>
                             </li>
                             <li>
-                                <span>Recap global</span>
-                                <ul>
-                                    <li><a th:href="@{/eposte/recap-global/produit}">Produit</a></li>
-                                    <li><a th:href="@{/eposte/recap-global/souscriptions}">Souscriptions</a></li>
-                                </ul>
+                                <details>
+                                    <summary>Recap global</summary>
+                                    <ul>
+                                        <li><a th:href="@{/eposte/recap-global/produit}">Produit</a></li>
+                                        <li><a th:href="@{/eposte/recap-global/souscriptions}">Souscriptions</a></li>
+                                    </ul>
+                                </details>
                             </li>
                         </ul>
-                    </li>
-                    <li>
-                        <span>Operations</span>
+                    </details>
+                </li>
+                <li>
+                    <details>
+                        <summary>Operations</summary>
                         <ul>
                             <li><a th:href="@{/operations/par-client}">Par Client</a></li>
                             <li><a th:href="@{/operations/par-compte}">Par Compte</a></li>
                         </ul>
-                    </li>
-                    <li><a th:href="@{/reclamations/liste}">Liste reclamations</a></li>
-                    <li><a th:href="@{/suggestions/liste}">Liste Suggestions</a></li>
-                    <li>
-                        <span>Commissions</span>
+                    </details>
+                </li>
+                <li><a th:href="@{/reclamations/liste}">Liste reclamations</a></li>
+                <li><a th:href="@{/suggestions/liste}">Liste Suggestions</a></li>
+                <li>
+                    <details>
+                        <summary>Commissions</summary>
                         <ul>
                             <li><a th:href="@{/commissions/ecoccp}">ECOCCP</a></li>
                             <li><a th:href="@{/commissions/eposte}">EPOSTE</a></li>
                         </ul>
-                    </li>
-                </ul>
-            </li>
+                    </details>
+                </li>
+            </ul>
+        </details>
 
-            <li sec:authorize="hasAuthority('PROFIL_SOUSMENU')">
-                <span>Releve</span>
-                <ul>
-                    <li><a th:href="@{/releves/excel-afb120}">Excel, AFB120</a></li>
-                    <li><a th:href="@{/releves/excel-togocel}">Excel, TOGOCEL</a></li>
-                    <li><a th:href="@{/releves/parametrage}">Parametrage Releve</a></li>
-                    <li><a th:href="@{/releves/liste}">Liste Releves</a></li>
-                </ul>
-            </li>
+        <details sec:authorize="hasAuthority('PROFIL_SOUSMENU')">
+            <summary>Releve</summary>
+            <ul>
+                <li><a th:href="@{/releves/excel-afb120}">Excel, AFB120</a></li>
+                <li><a th:href="@{/releves/excel-togocel}">Excel, TOGOCEL</a></li>
+                <li><a th:href="@{/releves/parametrage}">Parametrage Releve</a></li>
+                <li><a th:href="@{/releves/liste}">Liste Releves</a></li>
+            </ul>
+        </details>
 
-            <li sec:authorize="hasAuthority('PROFIL_MENU')">
-                <span>Gateway</span>
-                <ul>
-                    <li><a th:href="@{/gateway/liste}">Liste op</a></li>
-                </ul>
-            </li>
+        <details sec:authorize="hasAuthority('PROFIL_MENU')">
+            <summary>Gateway</summary>
+            <ul>
+                <li><a th:href="@{/gateway/liste}">Liste op</a></li>
+            </ul>
+        </details>
 
-            <li sec:authorize="hasAuthority('MARCHAND')">
-                <span>Marchand</span>
-                <ul>
-                    <li><a th:href="@{/marchand/parametrage}">Parametrage Marchand</a></li>
-                    <li><a th:href="@{/marchand/activer-desactiver}">Active/Desactive Marchand</a></li>
-                    <li><a th:href="@{/marchand/comptes}">Liste Compte Marchand</a></li>
-                    <li><a th:href="@{/marchand/operations}">Liste op</a></li>
-                    <li><a th:href="@{/marchand/operations-liste}">Liste op Marchand</a></li>
-                    <li><a th:href="@{/marchand/operations-par-marchand}">Liste op par Marchand</a></li>
-                    <li><a th:href="@{/marchand/commissions}">Commission Marchand</a></li>
-                </ul>
-            </li>
-        </ul>
+        <details sec:authorize="hasAuthority('MARCHAND')">
+            <summary>Marchand</summary>
+            <ul>
+                <li><a th:href="@{/marchand/parametrage}">Parametrage Marchand</a></li>
+                <li><a th:href="@{/marchand/activer-desactiver}">Active/Desactive Marchand</a></li>
+                <li><a th:href="@{/marchand/comptes}">Liste Compte Marchand</a></li>
+                <li><a th:href="@{/marchand/operations}">Liste op</a></li>
+                <li><a th:href="@{/marchand/operations-liste}">Liste op Marchand</a></li>
+                <li><a th:href="@{/marchand/operations-par-marchand}">Liste op par Marchand</a></li>
+                <li><a th:href="@{/marchand/commissions}">Commission Marchand</a></li>
+            </ul>
+        </details>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <span class="avatar" aria-hidden="true"></span>
+            <span sec:authentication="name">utilisateur</span>
+            <button type="button" class="theme-toggle" onclick="AMTheme.toggle()"
+                                      aria-label="Changer d'apparence (clair/sombre)" title="Mode clair / sombre">
+                             <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+                              <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                            </button>
+        </div>
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="btn-logout">Deconnexion</button>
+        </form>
     </div>
-</nav>
+</aside>
+
+<script th:inline="none">
+    (function () {
+        var input = document.getElementById('navSearch');
+        var nav = document.getElementById('sidebarNav');
+        if (!input || !nav) { return; }
+
+        var openedBySearch = [];
+
+        input.addEventListener('input', function () {
+            var term = input.value.trim().toLowerCase();
+            var links = nav.querySelectorAll('a');
+
+            if (term === '') {
+                nav.removeAttribute('data-filtering');
+                links.forEach(function (a) { a.closest('li').removeAttribute('data-match'); });
+                openedBySearch.forEach(function (d) { d.removeAttribute('open'); });
+                openedBySearch = [];
+                return;
+            }
+
+            nav.setAttribute('data-filtering', 'true');
+            openedBySearch.forEach(function (d) { d.removeAttribute('open'); });
+            openedBySearch = [];
+
+            links.forEach(function (a) {
+                var match = a.textContent.toLowerCase().indexOf(term) !== -1;
+                var li = a.closest('li');
+                li.setAttribute('data-match', match ? 'true' : 'false');
+                if (match) {
+                    var details = a.closest('details');
+                    while (details) {
+                        if (!details.open) {
+                            details.setAttribute('open', 'open');
+                            openedBySearch.push(details);
+                        }
+                        details = details.parentElement ? details.parentElement.closest('details') : null;
+                    }
+                }
+            });
+        });
+    })();
+</script>
 </body>
 </html>

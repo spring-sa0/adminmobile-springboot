@@ -2,32 +2,417 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/head :: head('AUTHENTIFICATION')}"></head>
 <body>
-<div class="login-wrapper">
-    <div class="login-panel">
-        <h1>AUTHENTIFICATION</h1>
 
-        <div class="alert-error" th:if="${param.error}">
-            Utilisateur ou mot de passe incorrect.
-        </div>
-        <div class="alert-success" th:if="${param.logout}">
-            Vous avez ete deconnecte.
-        </div>
+<style>
+    :root{
+        --auth-teal-dark:#0a2e2a;
+        --auth-teal:#0f6b5c;
+        --auth-teal-light:#e8f3f1;
+        --auth-gold:#f2b705;
+        --auth-gold-dark:#c99600;
+        --auth-gray-50:#f7f8fa;
+        --auth-gray-100:#eef1f3;
+        --auth-gray-300:#d7dde0;
+        --auth-gray-500:#8a969a;
+        --auth-gray-700:#3f4a4d;
+        --auth-danger:#d64545;
+        --auth-danger-bg:#fdeceb;
+        --auth-success:#1f9d63;
+        --auth-success-bg:#eafaf1;
+        --auth-surface:#ffffff;
+        --auth-heading:var(--auth-teal-dark);
+    }
 
-        <form th:action="@{/login}" method="post">
-            <div class="form-row">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" autofocus="autofocus"/>
+    /* Mode sombre : memes variables, valeurs adoucies (aucun noir/blanc pur) */
+    :root[data-theme="dark"]{
+        --auth-gray-50:#0f1b19;
+        --auth-gray-100:#1a2622;
+        --auth-gray-300:#33443e;
+        --auth-gray-500:#93a6a0;
+        --auth-gray-700:#cbd8d3;
+        --auth-surface:#17231f;
+        --auth-heading:#eaf6f2;
+        --auth-danger:#ff8a80;
+        --auth-danger-bg:#34181a;
+        --auth-success:#6fe3a5;
+        --auth-success-bg:#123321;
+    }
+
+    body{ margin:0; }
+
+    .auth-page{
+        min-height:100vh;
+        display:flex;
+        background:var(--auth-gray-50);
+        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    }
+
+    /* ---------- Interrupteur clair / sombre ---------- */
+    .auth-theme-toggle{
+        position:fixed; top:20px; right:24px; z-index:5;
+        width:38px; height:38px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        border:1.5px solid var(--auth-gray-300);
+        background:var(--auth-surface);
+        color:var(--auth-gray-700);
+        cursor:pointer;
+        transition:border-color .15s, color .15s, transform .1s;
+    }
+    .auth-theme-toggle:hover{ color:var(--auth-heading); border-color:var(--auth-teal); transform:translateY(-1px); }
+    .auth-theme-toggle svg{ width:18px; height:18px; }
+    .auth-theme-toggle .icon-sun{ display:none; }
+    :root[data-theme="dark"] .auth-theme-toggle .icon-sun{ display:flex; }
+    :root[data-theme="dark"] .auth-theme-toggle .icon-moon{ display:none; }
+
+    /* ---------- Panneau illustration (gauche) ---------- */
+    .auth-art{
+        position:relative;
+        flex:1.05;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:var(--auth-surface);
+        overflow:hidden;
+    }
+    .auth-art::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:
+                radial-gradient(circle at 15% 20%, var(--auth-teal-light) 0%, transparent 42%),
+                radial-gradient(circle at 85% 80%, #fff6df 0%, transparent 45%);
+        opacity:.9;
+    }
+    :root[data-theme="dark"] .auth-art::before{ opacity:.12; }
+    .auth-art-stage{
+        position:relative;
+        width:380px;
+        height:380px;
+    }
+    .auth-blob{
+        position:absolute;
+        inset:40px;
+        border-radius:38% 62% 60% 40% / 45% 40% 60% 55%;
+        background:linear-gradient(150deg, var(--auth-teal) 0%, var(--auth-teal-dark) 100%);
+        box-shadow:0 30px 60px -20px rgba(10,46,42,.45);
+        animation:auth-float 7s ease-in-out infinite;
+    }
+    .auth-card-mock{
+        position:absolute;
+        left:34px; bottom:54px;
+        width:230px; height:140px;
+        border-radius:16px;
+        background:linear-gradient(135deg, var(--auth-gold) 0%, var(--auth-gold-dark) 100%);
+        box-shadow:0 20px 40px -12px rgba(201,150,0,.55);
+        padding:18px;
+        box-sizing:border-box;
+        animation:auth-float 7s ease-in-out infinite .4s;
+    }
+    .auth-card-mock .chip{
+        width:34px; height:24px; border-radius:5px;
+        background:rgba(10,46,42,.35);
+        margin-bottom:22px;
+    }
+    .auth-card-mock .num{
+        color:rgba(10,46,42,.75);
+        font-weight:700; letter-spacing:2px; font-size:15px;
+    }
+    .auth-badge{
+        position:absolute;
+        top:18px; right:24px;
+        width:74px; height:74px;
+        border-radius:50%;
+        background:#ffffff;
+        display:flex; align-items:center; justify-content:center;
+        box-shadow:0 16px 30px -10px rgba(10,46,42,.35);
+        animation:auth-float 6s ease-in-out infinite .8s;
+    }
+    .auth-badge svg{ width:34px; height:34px; }
+    .auth-coin{
+        position:absolute;
+        width:46px; height:46px;
+        border-radius:50%;
+        background:var(--auth-gray-100);
+        border:2px solid var(--auth-gray-300);
+    }
+    .auth-coin.c1{ top:10px; left:0; animation:auth-float 5.5s ease-in-out infinite; }
+    .auth-coin.c2{ bottom:40px; right:0; animation:auth-float 6.5s ease-in-out infinite .3s; }
+    @keyframes auth-float{
+        0%,100%{ transform:translateY(0px); }
+        50%{ transform:translateY(-12px); }
+    }
+
+    /* ---------- Panneau formulaire (droite) ---------- */
+    .auth-form-side{
+        flex:1;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:40px 24px;
+    }
+    .auth-box{
+        width:100%;
+        max-width:400px;
+        animation:auth-rise .5s ease both;
+    }
+    @keyframes auth-rise{
+        from{ opacity:0; transform:translateY(14px); }
+        to{ opacity:1; transform:translateY(0); }
+    }
+    .auth-brand{
+        display:flex; align-items:center; gap:10px;
+        margin-bottom:34px;
+    }
+    .auth-brand img{ height:36px; width:36px; border-radius:8px; }
+    .auth-brand strong{ display:block; font-size:15px; color:var(--auth-heading); letter-spacing:.5px; }
+    .auth-brand span{ display:block; font-size:12px; color:var(--auth-gray-500); }
+
+    .auth-box h1{ margin:0 0 6px; font-size:24px; color:var(--auth-heading); }
+    .auth-box .auth-sub{ margin:0 0 26px; font-size:14px; color:var(--auth-gray-500); }
+
+    .auth-alert{
+        display:flex; align-items:center; gap:10px;
+        padding:12px 14px; border-radius:10px;
+        font-size:13.5px; margin-bottom:18px;
+    }
+    .auth-alert.err{ background:var(--auth-danger-bg); color:var(--auth-danger); }
+    .auth-alert.ok{ background:var(--auth-success-bg); color:var(--auth-success); }
+    .auth-alert svg{ width:18px; height:18px; flex:none; }
+
+    .auth-field{ margin-bottom:16px; }
+    .auth-field label{
+        display:block; font-size:12.5px; font-weight:600;
+        color:var(--auth-gray-700); margin-bottom:6px;
+    }
+    .auth-input-wrap{
+        position:relative;
+        display:flex; align-items:center;
+    }
+    .auth-input-wrap svg.leading{
+        position:absolute; left:14px;
+        width:17px; height:17px; color:var(--auth-gray-500);
+    }
+    .auth-input-wrap input{
+        width:100%;
+        padding:13px 14px 13px 40px;
+        border:1.5px solid var(--auth-gray-300);
+        border-radius:10px;
+        font-size:14.5px;
+        color:var(--auth-heading);
+        background:var(--auth-surface);
+        box-sizing:border-box;
+        transition:border-color .15s, box-shadow .15s, background .15s, color .15s;
+    }
+    .auth-input-wrap input:focus{
+        outline:none;
+        border-color:var(--auth-teal);
+        box-shadow:0 0 0 3px rgba(15,107,92,.14);
+    }
+    .auth-input-wrap.has-toggle input{ padding-right:42px; }
+    .auth-toggle-eye{
+        position:absolute; right:10px;
+        background:none; border:none; cursor:pointer;
+        padding:6px; display:flex; color:var(--auth-gray-500);
+    }
+    .auth-toggle-eye:hover{ color:var(--auth-heading); }
+    .auth-toggle-eye svg{ width:18px; height:18px; }
+
+    .auth-submit{
+        width:100%;
+        margin-top:6px;
+        padding:13px 14px;
+        border:none;
+        border-radius:10px;
+        font-size:15px;
+        font-weight:700;
+        letter-spacing:.2px;
+        color:#fff;
+        background:var(--auth-gray-300);
+        cursor:not-allowed;
+        transition:background .18s, transform .05s, box-shadow .18s;
+        display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .auth-submit.is-ready{
+        background:linear-gradient(135deg, var(--auth-teal) 0%, var(--auth-teal-dark) 100%);
+        cursor:pointer;
+        box-shadow:0 10px 22px -8px rgba(10,46,42,.55);
+    }
+    .auth-submit.is-ready:hover{ filter:brightness(1.06); }
+    .auth-submit.is-ready:active{ transform:translateY(1px); }
+    .auth-submit.is-loading{ cursor:progress; opacity:.85; }
+
+    .auth-spinner{
+        width:15px; height:15px;
+        border-radius:50%;
+        border:2px solid rgba(255,255,255,.4);
+        border-top-color:#fff;
+        animation:auth-spin .7s linear infinite;
+        display:none;
+    }
+    .auth-submit.is-loading .auth-spinner{ display:inline-block; }
+    @keyframes auth-spin{ to{ transform:rotate(360deg); } }
+
+    .auth-reset{
+        display:block;
+        margin:14px auto 0;
+        background:none; border:none;
+        font-size:12.5px; color:var(--auth-gray-500);
+        cursor:pointer;
+    }
+    .auth-reset:hover{ color:var(--auth-heading); text-decoration:underline; }
+
+    /* secousse quand identifiants incorrects */
+    @keyframes auth-shake{
+        10%,90%{ transform:translateX(-1px); }
+        20%,80%{ transform:translateX(3px); }
+        30%,50%,70%{ transform:translateX(-6px); }
+        40%,60%{ transform:translateX(6px); }
+    }
+    .auth-shake{ animation:auth-shake .5s cubic-bezier(.36,.07,.19,.97) both; }
+    .auth-field.auth-invalid input{
+        border-color:var(--auth-danger);
+        box-shadow:0 0 0 3px rgba(214,69,69,.12);
+    }
+
+    @media (max-width:960px){
+        .auth-art{ display:none; }
+    }
+</style>
+
+<div class="auth-page">
+
+    <button type="button" class="auth-theme-toggle" onclick="AMTheme.toggle()"
+            aria-label="Changer d'apparence (clair/sombre)" title="Mode clair / sombre">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    </button>
+
+    <div class="auth-art">
+        <div class="auth-art-stage">
+            <div class="auth-blob"></div>
+            <div class="auth-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#0f6b5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             </div>
-            <div class="form-row">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password"/>
+            <div class="auth-card-mock">
+                <div class="chip"></div>
+                <div class="num">•••• 4821</div>
             </div>
-            <div class="form-actions">
-                <button type="submit">Connecter</button>
-                <button type="reset">Effacer</button>
+            <div class="auth-coin c1"></div>
+            <div class="auth-coin c2"></div>
+        </div>
+    </div>
+
+    <div class="auth-form-side">
+        <div class="auth-box" id="authBox">
+
+            <div class="auth-brand">
+                <img th:src="@{/images/logo_poste.png}" alt="La Poste"/>
+                <span>
+                    <strong>ADMINISTRATION</strong>
+                    <span>EcoCCP &middot; E-Poste</span>
+                </span>
             </div>
-        </form>
+
+            <h1>Bienvenue</h1>
+            <p class="auth-sub">Connectez-vous pour acceder a la plateforme d'administration.</p>
+
+            <div class="auth-alert err" th:if="${param.error}" id="authError">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>Identifiant ou mot de passe incorrect.</span>
+            </div>
+            <div class="auth-alert ok" th:if="${param.logout}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                <span>Vous avez ete deconnecte.</span>
+            </div>
+
+            <form th:action="@{/login}" method="post" id="authForm" novalidate>
+                <div class="auth-field" id="fieldUser">
+                    <label for="username">Identifiant</label>
+                    <div class="auth-input-wrap">
+                        <svg class="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <input type="text" id="username" name="username" placeholder="Votre identifiant" autocomplete="username" autofocus="autofocus"/>
+                    </div>
+                </div>
+
+                <div class="auth-field" id="fieldPass">
+                    <label for="password">Mot de passe</label>
+                    <div class="auth-input-wrap has-toggle">
+                        <svg class="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" autocomplete="current-password"/>
+                        <button type="button" class="auth-toggle-eye" id="togglePwd" aria-label="Afficher le mot de passe">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="auth-submit" id="authSubmit" disabled="disabled">
+                    <span class="auth-spinner"></span>
+                    <span id="authSubmitLabel">Connexion</span>
+                </button>
+
+                <button type="button" class="auth-reset" id="authReset">Effacer les champs</button>
+            </form>
+        </div>
     </div>
 </div>
+
+<script th:inline="none">
+    (function () {
+        var user = document.getElementById('username');
+        var pass = document.getElementById('password');
+        var submitBtn = document.getElementById('authSubmit');
+        var submitLabel = document.getElementById('authSubmitLabel');
+        var form = document.getElementById('authForm');
+        var toggleBtn = document.getElementById('togglePwd');
+        var resetBtn = document.getElementById('authReset');
+        var authBox = document.getElementById('authBox');
+        var errorBanner = document.getElementById('authError');
+
+        function refreshSubmitState() {
+            var ready = user.value.trim().length > 0 && pass.value.trim().length > 0;
+            submitBtn.disabled = !ready;
+            submitBtn.classList.toggle('is-ready', ready);
+        }
+
+        ['input', 'change', 'keyup'].forEach(function (evt) {
+            user.addEventListener(evt, refreshSubmitState);
+            pass.addEventListener(evt, refreshSubmitState);
+        });
+        window.addEventListener('load', function () {
+            setTimeout(refreshSubmitState, 150);
+        });
+
+        toggleBtn.addEventListener('click', function () {
+            var showing = pass.type === 'text';
+            pass.type = showing ? 'password' : 'text';
+            toggleBtn.setAttribute('aria-label', showing ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
+        });
+
+        resetBtn.addEventListener('click', function () {
+            form.reset();
+            refreshSubmitState();
+            user.focus();
+        });
+
+        form.addEventListener('submit', function (e) {
+            if (submitBtn.disabled) { e.preventDefault(); return; }
+            submitBtn.classList.add('is-loading');
+            submitBtn.disabled = true;
+            submitLabel.textContent = 'Connexion...';
+        });
+
+        if (errorBanner) {
+            authBox.classList.add('auth-shake');
+            document.getElementById('fieldUser').classList.add('auth-invalid');
+            document.getElementById('fieldPass').classList.add('auth-invalid');
+            pass.value = '';
+            setTimeout(function () { authBox.classList.remove('auth-shake'); }, 500);
+            pass.focus();
+        }
+
+        refreshSubmitState();
+    })();
+</script>
+
 </body>
 </html>
