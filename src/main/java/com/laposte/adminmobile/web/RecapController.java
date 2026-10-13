@@ -32,7 +32,7 @@ public class RecapController {
         model.addAttribute("date2", date2);
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
-            Date d2 = WebDateUtils.parse(date2);
+            Date d2 = WebDateUtils.parseEnd(date2);
             if (d1 == null || d2 == null) {
                 model.addAttribute("error", "Dates invalides.");
             } else {
@@ -51,7 +51,7 @@ public class RecapController {
         model.addAttribute("date2", date2);
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
-            Date d2 = WebDateUtils.parse(date2);
+            Date d2 = WebDateUtils.parseEnd(date2);
             if (d1 == null || d2 == null) {
                 model.addAttribute("error", "Dates invalides.");
             } else {
@@ -70,7 +70,7 @@ public class RecapController {
         model.addAttribute("date2", date2);
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
-            Date d2 = WebDateUtils.parse(date2);
+            Date d2 = WebDateUtils.parseEnd(date2);
             if (d1 == null || d2 == null) {
                 model.addAttribute("error", "Dates invalides.");
             } else {
@@ -89,7 +89,7 @@ public class RecapController {
         model.addAttribute("date2", date2);
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
-            Date d2 = WebDateUtils.parse(date2);
+            Date d2 = WebDateUtils.parseEnd(date2);
             if (d1 == null || d2 == null) {
                 model.addAttribute("error", "Dates invalides.");
             } else {

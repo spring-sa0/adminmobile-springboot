@@ -1,5 +1,3 @@
-LABEL authors="datchemi"
-
 # ---- Etape de build ---------------------------------------------------------
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /build
@@ -15,6 +13,7 @@ RUN mvn -B -DskipTests package && \
 
 # ---- Etape d'execution -------------------------------------------------------
 FROM eclipse-temurin:17-jre-jammy
+LABEL authors="datchemi"
 
 RUN groupadd --system spring && useradd --system --gid spring spring
 USER spring:spring

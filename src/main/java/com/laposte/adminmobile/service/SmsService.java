@@ -1,8 +1,7 @@
 package com.laposte.adminmobile.service;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -18,7 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SmsService {
 
-    private static final DateFormat DATE_FORMAT_2 = new SimpleDateFormat("yyyyMMddHHmmss");
+    // DateTimeFormatter (thread-safe) rather than a shared static SimpleDateFormat.
+    private static final DateTimeFormatter DATE_FORMAT_2 = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private static final String SQL_SEQ_SMS = "SELECT SPT.SEQ_SMS.NEXTVAL FROM DUAL";
 
@@ -46,8 +46,7 @@ public class SmsService {
      */
     @Transactional
     public void sendsms(String telephone, String vContenu) {
-        Date now = new Date();
-        String numero = DATE_FORMAT_2.format(now);
+        String numero = LocalDateTime.now().format(DATE_FORMAT_2);
         String seq = seqSms();
 
         jdbcTemplate.update(SQL_INSERT_SMS,

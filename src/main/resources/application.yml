@@ -2,12 +2,16 @@ spring:
   application:
     name: adminmobile
 
+  # Charge le .env local s'il existe (lancement IDE / mvn). En Docker, les variables viennent de env_file.
+  config:
+    import: optional:file:.env[.properties]
+
   datasource:
     # Correspond a la ressource JNDI java:app/ds_admin (glassfish-resources.xml) de l'appli d'origine.
     # Ne JAMAIS committer d'identifiants ici : tout vient de variables d'environnement.
-    url: jdbc:oracle:thin:@orcprod.laposte.tg:1521/dbpost
-    username: eposte
-    password: Vision_2020
+    url: ${DB_URL:jdbc:oracle:thin:@//localhost:1521/ORCLPDB1}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
     driver-class-name: oracle.jdbc.OracleDriver
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:16}
@@ -21,7 +25,7 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.OracleDialect
         format_sql: true
-    show-sql: true
+    show-sql: ${SHOW_SQL:false}
 
   thymeleaf:
     cache: ${THYMELEAF_CACHE:true}

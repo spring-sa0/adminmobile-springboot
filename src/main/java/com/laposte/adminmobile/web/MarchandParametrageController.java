@@ -76,7 +76,11 @@ public class MarchandParametrageController {
         } else {
             String tel = telephone.trim();
             String compte = numerocompte.trim();
-            usersService.paramMarchand(tel, compte);
+            if (usersService.paramMarchand(tel, compte) == 0) {
+                redirectAttributes.addFlashAttribute("error", "Ce compte n'existe pas!");
+                redirectAttributes.addAttribute("telephone", telephone);
+                return "redirect:/marchand/parametrage";
+            }
 
             ModifCodesecret audit = new ModifCodesecret();
             audit.setTelephone(parseTelephone(tel));
@@ -123,9 +127,10 @@ public class MarchandParametrageController {
             redirectAttributes.addFlashAttribute("error", "Telephone obligatoire!");
         } else if (motif == null || motif.isBlank()) {
             redirectAttributes.addFlashAttribute("error", "Motif obligatoire");
+        } else if (usersService.activerMarchand(telephone.trim()) == 0) {
+            redirectAttributes.addFlashAttribute("error", "Ce compte n'existe pas!");
         } else {
             String tel = telephone.trim();
-            usersService.activerMarchand(tel);
             createAudit(tel, "Activation Marchand", authentication);
             redirectAttributes.addFlashAttribute("success", "Activation effectuee avec succes");
         }
@@ -144,9 +149,10 @@ public class MarchandParametrageController {
             redirectAttributes.addFlashAttribute("error", "Telephone obligatoire!");
         } else if (motif == null || motif.isBlank()) {
             redirectAttributes.addFlashAttribute("error", "Motif obligatoire");
+        } else if (usersService.desactiverMarchand(telephone.trim()) == 0) {
+            redirectAttributes.addFlashAttribute("error", "Ce compte n'existe pas!");
         } else {
             String tel = telephone.trim();
-            usersService.desactiverMarchand(tel);
             createAudit(tel, "Desactivation Marchand", authentication);
             redirectAttributes.addFlashAttribute("success", "Desactivation effectuee avec succes");
         }

@@ -62,9 +62,12 @@ public class CompteActivationController {
             redirectAttributes.addFlashAttribute("error", "Telephone obligatoire!");
         } else if (motif == null || motif.isBlank()) {
             redirectAttributes.addFlashAttribute("error", "Motif obligatoire");
+        } else if (motif.length() > ModifCodesecret.MOTIF_MAX) {
+            redirectAttributes.addFlashAttribute("error", ModifCodesecret.MOTIF_MAX + " caracteres maximum pour le motif");
+        } else if (usersService.desactivecompte(telephone.trim()) == 0) {
+            redirectAttributes.addFlashAttribute("error", "Ce compte n'existe pas!");
         } else {
             String tel = telephone.trim();
-            usersService.desactivecompte(tel);
             ModifCodesecret audit = newAudit(tel, motif, authentication);
             audit.setActif(2);
             if (audit.getTelephone() != null) {
@@ -88,9 +91,12 @@ public class CompteActivationController {
             redirectAttributes.addFlashAttribute("error", "Telephone obligatoire!");
         } else if (motif == null || motif.isBlank()) {
             redirectAttributes.addFlashAttribute("error", "Motif obligatoire");
+        } else if (motif.length() > ModifCodesecret.MOTIF_MAX) {
+            redirectAttributes.addFlashAttribute("error", ModifCodesecret.MOTIF_MAX + " caracteres maximum pour le motif");
+        } else if (usersService.activecompte(telephone.trim()) == 0) {
+            redirectAttributes.addFlashAttribute("error", "Ce compte n'existe pas!");
         } else {
             String tel = telephone.trim();
-            usersService.activecompte(tel);
             ModifCodesecret audit = newAudit(tel, motif, authentication);
             if (audit.getTelephone() != null) {
                 modifCodesecretService.create(audit);

@@ -57,7 +57,7 @@ public class ComptesReportRepository {
             + "  (SELECT r.solde_apres FROM SPT.RECU_ELECTRONIQUE r WHERE r.numero_compte = c.numero_compte "
             + "     AND r.date_operation BETWEEN ? AND ? "
             + "     AND r.date_operation = (SELECT MAX(r2.date_operation) FROM SPT.RECU_ELECTRONIQUE r2 "
-            + "       WHERE r2.numero_compte = c.numero_compte AND r2.date_operation BETWEEN ? AND ?)) AS solde, "
+            + "       WHERE r2.numero_compte = c.numero_compte AND r2.date_operation BETWEEN ? AND ?)) AS solde_apres, "
             + "  (SELECT MAX(r.date_operation) FROM SPT.RECU_ELECTRONIQUE r WHERE r.numero_compte = c.numero_compte "
             + "     AND r.date_operation BETWEEN ? AND ?) AS date_operation "
             + "FROM SPT.COMPTE c ORDER BY c.intitule";

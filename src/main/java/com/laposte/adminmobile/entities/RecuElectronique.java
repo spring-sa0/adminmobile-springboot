@@ -48,7 +48,7 @@ public class RecuElectronique implements Serializable {
     @NotNull
     @Column(name = "NUMERO_OPERATION")
     private Long numeroOperation;
-    @Size(max = 16)
+    @Size(max = 50)
     @Column(name = "REFBANK")
     private String refbank;
     @Column(name = "NUMERO_COMPTE")
@@ -80,9 +80,14 @@ public class RecuElectronique implements Serializable {
     @Size(max = 25)
     @Column(name = "ORIGINE")
     private String origine;
-    @Size(max = 200)
-    @Column(name = "MOTIF_ANNULATION")
-    private String motifAnnulation;
+    // Pas de MOTIF_ANNULATION dans SPT.RECU_ELECTRONIQUE (elle n'existe que dans RECU_ELECTRONIQUE_2).
+    // Une annulation (PROCEDURES.ANNUL_OP_ECOCCP) insere une contre-ecriture "ANNUL ..." portant
+    // ANCIEN_NUM_OP = operation annulee et CODE_UTILISATEUR = qui a annule.
+    @Size(max = 50)
+    @Column(name = "CODE_UTILISATEUR")
+    private String codeUtilisateur;
+    @Column(name = "ANCIEN_NUM_OP")
+    private Long ancienNumOp;
 
     public RecuElectronique() {
     }
@@ -203,12 +208,20 @@ public class RecuElectronique implements Serializable {
         this.origine = origine;
     }
 
-    public String getMotifAnnulation() {
-        return motifAnnulation;
+    public String getCodeUtilisateur() {
+        return codeUtilisateur;
     }
 
-    public void setMotifAnnulation(String motifAnnulation) {
-        this.motifAnnulation = motifAnnulation;
+    public void setCodeUtilisateur(String codeUtilisateur) {
+        this.codeUtilisateur = codeUtilisateur;
+    }
+
+    public Long getAncienNumOp() {
+        return ancienNumOp;
+    }
+
+    public void setAncienNumOp(Long ancienNumOp) {
+        this.ancienNumOp = ancienNumOp;
     }
 
 

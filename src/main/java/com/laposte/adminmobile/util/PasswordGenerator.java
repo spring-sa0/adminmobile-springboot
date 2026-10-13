@@ -42,11 +42,11 @@ public final class PasswordGenerator {
         while (password.length() != 8 && password.length() != 9 && password.length() != 10) {
             int pick = RANDOM.nextInt(3);
             if (pick == 0) {
-                password.append(LOWER.charAt(RANDOM.nextInt(25)));
+                password.append(LOWER.charAt(RANDOM.nextInt(LOWER.length())));
             } else if (pick == 1) {
-                password.append(DIGITS.charAt(RANDOM.nextInt(9)));
+                password.append(DIGITS.charAt(RANDOM.nextInt(DIGITS.length())));
             } else {
-                password.append(UPPER.charAt(RANDOM.nextInt(25)));
+                password.append(UPPER.charAt(RANDOM.nextInt(UPPER.length())));
             }
         }
         return password.toString();

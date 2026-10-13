@@ -69,12 +69,12 @@ public interface RecuElectroniqueRepository extends JpaRepository<RecuElectroniq
             Date date1, Date date2, String origine);
 
     /**
-     * Cancelled EcoCCP operations in a date range: {@code motifAnnulation} is populated exactly
-     * by the {@code annul_op_ecoccp} stored procedure (see {@code RecuElectroniqueService#annulopeco}),
-     * so "not null" is a faithful marker of an annulled operation. Used for
-     * {@code /etats/transactions/ecoccp-annulees}.
+     * Cancelled EcoCCP operations in a date range. PROCEDURES.ANNUL_OP_ECOCCP moves the original
+     * row to SPT.RECU_ELECTRONIQUE_ANNULE and inserts here an "ANNUL ..." counter-entry whose
+     * {@code ancienNumOp} points to the cancelled operation (only that procedure fills the column),
+     * dated at cancellation time. Used for {@code /etats/transactions/ecoccp-annulees}.
      */
-    List<RecuElectronique> findByMotifAnnulationIsNotNullAndDateOperationBetweenOrderByDateOperationDesc(
+    List<RecuElectronique> findByAncienNumOpIsNotNullAndDateOperationBetweenOrderByDateOperationDesc(
             Date date1, Date date2);
 
     /**

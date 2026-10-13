@@ -96,9 +96,14 @@ public interface UsersRepository extends JpaRepository<Users, String> {
             + "(SELECT DISTINCT r.telephone FROM RecuElectronique r WHERE r.dateOperation BETWEEN :date1 AND :date2)")
     List<Users> findUsersWithOperationsBetween(@Param("date1") java.util.Date date1, @Param("date2") java.util.Date date2);
 
-    /** Complement of the above, for {@code /eposte/comptes-op-non-effectuees} (legacy {@code eposteoppasfait.xhtml}). */
+    /**
+     * Complement of the above, for {@code /eposte/comptes-op-non-effectuees} (legacy {@code eposteoppasfait.xhtml}).
+     * The {@code IS NOT NULL} guard is required: a single receipt with a NULL telephone makes
+     * {@code NOT IN} evaluate to UNKNOWN for every row, so the list would always come back empty.
+     */
     @Query("SELECT u FROM Users u WHERE u.telephone NOT IN "
-            + "(SELECT DISTINCT r.telephone FROM RecuElectronique r WHERE r.dateOperation BETWEEN :date1 AND :date2)")
+            + "(SELECT DISTINCT r.telephone FROM RecuElectronique r WHERE r.dateOperation BETWEEN :date1 AND :date2 "
+            + "AND r.telephone IS NOT NULL)")
     List<Users> findUsersWithoutOperationsBetween(@Param("date1") java.util.Date date1, @Param("date2") java.util.Date date2);
 
     /**

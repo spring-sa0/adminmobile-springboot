@@ -114,7 +114,11 @@ public class ProfilController {
             cpt = "0";
         }
 
-        usersService.modifProfil(telephone.trim(), newProfil, cpt);
+        if (usersService.modifProfil(telephone.trim(), newProfil, cpt) == 0) {
+            redirectAttributes.addFlashAttribute("error", "Aucun utilisateur trouve");
+            redirectAttributes.addAttribute("telephone", telephone);
+            return "redirect:/parametres/modif-profil";
+        }
         redirectAttributes.addFlashAttribute("success", "Modification effectuee avec succes");
         return "redirect:/parametres/modif-profil";
     }

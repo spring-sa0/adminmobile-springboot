@@ -6,19 +6,22 @@ import com.laposte.adminmobile.service.ModifCodesecretService;
 import com.laposte.adminmobile.service.SmsService;
 import com.laposte.adminmobile.service.UsersService;
 import com.laposte.adminmobile.util.PasswordGenerator;
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Port of {@code modifpassword.xhtml} (legacy {@code UserCtrl2#afficheruser()}/{@code
@@ -70,6 +73,17 @@ public class PasswordResetController {
         return "parametres/modif-password";
     }
 
+    /**
+     * Generation d'un mot de passe candidat en AJAX, sans recharger la page - evite que le
+     * "Motif" deja saisi par l'utilisateur soit perdu (c'etait le bug : l'ancien bouton "Generer"
+     * declenchait un GET plein-page qui reinitialisait le formulaire "Modifier").
+     */
+    @GetMapping(value = "/parametres/modif-password/generate", produces = MediaType.TEXT_PLAIN_VALUE)
+    @ResponseBody
+    public String generateAjax() {
+        return PasswordGenerator.generatePassword();
+    }
+
     /** Port of {@code modifierpass()}. */
     @PostMapping("/parametres/modif-password")
     public String submit(@RequestParam String telephone,
@@ -79,11 +93,14 @@ public class PasswordResetController {
                           RedirectAttributes redirectAttributes) {
         if (motif == null || motif.isBlank()) {
             redirectAttributes.addFlashAttribute("error", "Motif obligatoire");
+        } else if (motif.length() > ModifCodesecret.MOTIF_MAX) {
+            redirectAttributes.addFlashAttribute("error", ModifCodesecret.MOTIF_MAX + " caracteres maximum pour le motif");
         } else if (newpass == null || newpass.isBlank()) {
             redirectAttributes.addFlashAttribute("error", "Mot de passe obligatoire");
+        } else if (usersService.reinitPass(telephone.trim(), newpass) == 0) {
+            redirectAttributes.addFlashAttribute("error", "Ce compte n'existe pas!");
         } else {
             String tel = telephone.trim();
-            usersService.reinitPass(tel, newpass);
 
             ModifCodesecret audit = new ModifCodesecret();
             audit.setTelephone(parseTelephone(tel));

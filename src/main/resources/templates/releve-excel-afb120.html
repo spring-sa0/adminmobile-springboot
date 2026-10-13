@@ -6,19 +6,20 @@
 
 <div class="mainDiv">
     <h2 style="color:#f2693d;">Releve de compte (Excel / AFB120)</h2>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
 
     <form th:action="@{/releves/excel-afb120/excel}" th:object="${releveExportForm}" method="post" id="releveForm">
         <div class="form-row">
             <label for="date1">Date debut</label>
-            <input type="date" id="date1" th:field="*{datedebut}"/>
+            <input type="date" id="date1" th:field="*{datedebut}" required="required"/>
         </div>
         <div class="form-row">
             <label for="date2">Date fin</label>
-            <input type="date" id="date2" th:field="*{datefin}"/>
+            <input type="date" id="date2" th:field="*{datefin}" required="required"/>
         </div>
         <div class="form-row">
             <label for="numcpt">Numero Compte</label>
-            <input type="text" id="numcpt" th:field="*{numerocompte}" maxlength="50" onchange="lookupIntitule()"/>
+            <input type="text" id="numcpt" th:field="*{numerocompte}" maxlength="50" required="required" onchange="lookupIntitule()"/>
             <span id="intitule" style="margin-left:8px; color:#005555; font-weight:bold;"></span>
         </div>
 

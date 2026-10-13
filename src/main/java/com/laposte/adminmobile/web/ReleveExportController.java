@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -83,7 +84,11 @@ public class ReleveExportController {
 
     /** Query-driven report: releve_client1.jrxml's own SELECT reads IMOBILE.MOUVEMENT_UL after populateReleveClient1() fills it. */
     @PostMapping("/excel-afb120/excel")
-    public ResponseEntity<byte[]> excelAfb120Excel(@ModelAttribute ReleveExportForm form) {
+    public Object excelAfb120Excel(@ModelAttribute ReleveExportForm form, RedirectAttributes redirectAttributes) {
+        String invalid = rejectIfIncomplete(form, "/releves/excel-afb120", redirectAttributes);
+        if (invalid != null) {
+            return invalid;
+        }
         releveExportService.populateReleveClient1(form.getNumerocompte(), form.getDatedebut(), form.getDatefin());
 
         Map<String, Object> params = new HashMap<>();
@@ -96,7 +101,11 @@ public class ReleveExportController {
 
     /** Not a Jasper report: replicates EtatbeanCtrl.FichierAFB() - populate then dump IMOBILE.MODELEAFB as flat text. */
     @PostMapping("/excel-afb120/afb120")
-    public ResponseEntity<byte[]> excelAfb120Text(@ModelAttribute ReleveExportForm form) {
+    public Object excelAfb120Text(@ModelAttribute ReleveExportForm form, RedirectAttributes redirectAttributes) {
+        String invalid = rejectIfIncomplete(form, "/releves/excel-afb120", redirectAttributes);
+        if (invalid != null) {
+            return invalid;
+        }
         releveExportService.populateAfb120(form.getNumerocompte(), form.getDatedebut(), form.getDatefin());
         List<String> lines = releveExportService.fetchAfb120Lines();
         String content = String.join(System.lineSeparator(), lines);
@@ -120,7 +129,11 @@ public class ReleveExportController {
 
     /** Query-driven report: releve_solde.jrxml's own SELECT reads IMOBILE.MOUVEMENT after populateReleveSolde() fills it. */
     @PostMapping("/excel-togocel/excel")
-    public ResponseEntity<byte[]> excelTogocel(@ModelAttribute ReleveExportForm form) {
+    public Object excelTogocel(@ModelAttribute ReleveExportForm form, RedirectAttributes redirectAttributes) {
+        String invalid = rejectIfIncomplete(form, "/releves/excel-togocel", redirectAttributes);
+        if (invalid != null) {
+            return invalid;
+        }
         releveExportService.populateReleveSolde(form.getNumerocompte(), form.getDatedebut(), form.getDatefin());
 
         Map<String, Object> params = new HashMap<>();
@@ -138,6 +151,29 @@ public class ReleveExportController {
     public String intitule(@RequestParam String numerocompte) {
         String intitule = formatsService.getIntitule(numerocompte);
         return intitule != null ? intitule : "";
+    }
+
+    /**
+     * The Oracle procedures behind these exports are called with whatever the form sent: without
+     * this check a missing compte/date reached them as NULL and ended in a 500 error page.
+     * Returns the redirect back to the form, or null when the form is complete.
+     */
+    private static String rejectIfIncomplete(ReleveExportForm form, String formUrl, RedirectAttributes redirectAttributes) {
+        String error = null;
+        if (form.getNumerocompte() == null || form.getNumerocompte().isBlank()) {
+            error = "Veuillez entrer le numero de compte";
+        } else if (form.getDatedebut() == null || form.getDatefin() == null) {
+            error = "Veuillez renseigner les deux dates";
+        } else if (form.getDatedebut().isAfter(form.getDatefin())) {
+            error = "La date de debut doit preceder la date de fin";
+        }
+        if (error == null) {
+            form.setNumerocompte(form.getNumerocompte().trim());
+            return null;
+        }
+        redirectAttributes.addFlashAttribute("error", error);
+        redirectAttributes.addFlashAttribute("releveExportForm", form);
+        return "redirect:" + formUrl;
     }
 
     private ResponseEntity<byte[]> excelResponse(byte[] bytes, String filename) {

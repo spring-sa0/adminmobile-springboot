@@ -2,6 +2,7 @@ package com.laposte.adminmobile.web;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -36,5 +37,24 @@ final class WebDateUtils {
         } catch (ParseException e) {
             return null;
         }
+    }
+
+    /**
+     * Like {@link #parse} but returns the last millisecond of that day: the end bound of a filter
+     * period must include the whole day, otherwise "du 01/01 au 31/01" stops at 31/01 00:00:00 and
+     * silently drops every row timestamped on the 31st.
+     */
+    static Date parseEnd(String value) {
+        Date date = parse(value);
+        if (date == null) {
+            return null;
+        }
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        cal.set(Calendar.HOUR_OF_DAY, 23);
+        cal.set(Calendar.MINUTE, 59);
+        cal.set(Calendar.SECOND, 59);
+        cal.set(Calendar.MILLISECOND, 999);
+        return cal.getTime();
     }
 }

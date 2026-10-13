@@ -51,6 +51,7 @@
     .auth-theme-toggle{
         position:fixed; top:20px; right:24px; z-index:5;
         width:38px; height:38px; border-radius:50%;
+        padding:0;
         display:flex; align-items:center; justify-content:center;
         border:1.5px solid var(--auth-gray-300);
         background:var(--auth-surface);
@@ -58,8 +59,8 @@
         cursor:pointer;
         transition:border-color .15s, color .15s, transform .1s;
     }
-    .auth-theme-toggle:hover{ color:var(--auth-heading); border-color:var(--auth-teal); transform:translateY(-1px); }
-    .auth-theme-toggle svg{ width:18px; height:18px; }
+    .auth-theme-toggle:hover{ background:var(--auth-surface); color:var(--auth-heading); border-color:var(--auth-teal); transform:translateY(-1px); }
+    .auth-theme-toggle svg{ width:18px; height:18px; flex:none; }
     .auth-theme-toggle .icon-sun{ display:none; }
     :root[data-theme="dark"] .auth-theme-toggle .icon-sun{ display:flex; }
     :root[data-theme="dark"] .auth-theme-toggle .icon-moon{ display:none; }
@@ -165,7 +166,7 @@
     }
     .auth-brand img{ height:36px; width:36px; border-radius:8px; }
     .auth-brand strong{ display:block; font-size:15px; color:var(--auth-heading); letter-spacing:.5px; }
-    .auth-brand span{ display:block; font-size:12px; color:var(--auth-gray-500); }
+    .auth-brand-sub{ display:block; font-size:12px; color:var(--auth-gray-500); }
 
     .auth-box h1{ margin:0 0 6px; font-size:24px; color:var(--auth-heading); }
     .auth-box .auth-sub{ margin:0 0 26px; font-size:14px; color:var(--auth-gray-500); }
@@ -189,10 +190,16 @@
         display:flex; align-items:center;
     }
     .auth-input-wrap svg.leading{
-        position:absolute; left:14px;
+        position:absolute; left:14px; z-index:1;
         width:17px; height:17px; color:var(--auth-gray-500);
+        pointer-events:none;
     }
-    .auth-input-wrap input{
+    /* Selecteurs renforces : la regle globale input:not([type=checkbox]):not([type=radio])
+       de custom.css est plus specifique que ".auth-input-wrap input" et ecrasait le padding
+       gauche reserve a l'icone. */
+    .auth-page .auth-input-wrap input.auth-input{
+        margin:0;
+        font-family:inherit;
         width:100%;
         padding:13px 14px 13px 40px;
         border:1.5px solid var(--auth-gray-300);
@@ -203,18 +210,30 @@
         box-sizing:border-box;
         transition:border-color .15s, box-shadow .15s, background .15s, color .15s;
     }
-    .auth-input-wrap input:focus{
+    .auth-page .auth-input-wrap input.auth-input:focus{
         outline:none;
         border-color:var(--auth-teal);
         box-shadow:0 0 0 3px rgba(15,107,92,.14);
     }
-    .auth-input-wrap.has-toggle input{ padding-right:42px; }
+    /* Champs pre-remplis par le navigateur : garder les couleurs du theme, et declencher
+       un animationstart que le script utilise pour detecter l'auto-remplissage. */
+    .auth-page .auth-input-wrap input.auth-input:-webkit-autofill{
+        box-shadow:0 0 0 1000px var(--auth-surface) inset;
+        -webkit-text-fill-color:var(--auth-heading);
+        animation-name:auth-autofill;
+    }
+    .auth-page .auth-input-wrap input.auth-input:-webkit-autofill:focus{
+        box-shadow:0 0 0 1000px var(--auth-surface) inset, 0 0 0 3px rgba(15,107,92,.14);
+    }
+    @keyframes auth-autofill{ from{} to{} }
+    .auth-page .auth-input-wrap.has-toggle input.auth-input{ padding-right:42px; }
     .auth-toggle-eye{
         position:absolute; right:10px;
         background:none; border:none; cursor:pointer;
         padding:6px; display:flex; color:var(--auth-gray-500);
+        border-radius:6px;
     }
-    .auth-toggle-eye:hover{ color:var(--auth-heading); }
+    .auth-toggle-eye:hover{ background:none; color:var(--auth-heading); }
     .auth-toggle-eye svg{ width:18px; height:18px; }
 
     .auth-submit{
@@ -228,10 +247,11 @@
         letter-spacing:.2px;
         color:#fff;
         background:var(--auth-gray-300);
-        cursor:not-allowed;
+        cursor:pointer;
         transition:background .18s, transform .05s, box-shadow .18s;
         display:flex; align-items:center; justify-content:center; gap:8px;
     }
+    .auth-submit:hover{ background:var(--auth-gray-300); }
     .auth-submit.is-ready{
         background:linear-gradient(135deg, var(--auth-teal) 0%, var(--auth-teal-dark) 100%);
         cursor:pointer;
@@ -256,10 +276,11 @@
         display:block;
         margin:14px auto 0;
         background:none; border:none;
-        font-size:12.5px; color:var(--auth-gray-500);
+        padding:4px 8px;
+        font-size:12.5px; font-weight:500; color:var(--auth-gray-500);
         cursor:pointer;
     }
-    .auth-reset:hover{ color:var(--auth-heading); text-decoration:underline; }
+    .auth-reset:hover{ background:none; color:var(--auth-heading); text-decoration:underline; }
 
     /* secousse quand identifiants incorrects */
     @keyframes auth-shake{
@@ -269,7 +290,7 @@
         40%,60%{ transform:translateX(6px); }
     }
     .auth-shake{ animation:auth-shake .5s cubic-bezier(.36,.07,.19,.97) both; }
-    .auth-field.auth-invalid input{
+    .auth-page .auth-field.auth-invalid input.auth-input{
         border-color:var(--auth-danger);
         box-shadow:0 0 0 3px rgba(214,69,69,.12);
     }
@@ -309,7 +330,7 @@
                 <img th:src="@{/images/logo_poste.png}" alt="La Poste"/>
                 <span>
                     <strong>ADMINISTRATION</strong>
-                    <span>EcoCCP &middot; E-Poste</span>
+                    <span class="auth-brand-sub">EcoCCP &middot; E-Poste</span>
                 </span>
             </div>
 
@@ -330,7 +351,7 @@
                     <label for="username">Identifiant</label>
                     <div class="auth-input-wrap">
                         <svg class="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <input type="text" id="username" name="username" placeholder="Votre identifiant" autocomplete="username" autofocus="autofocus"/>
+                        <input type="text" class="auth-input" id="username" name="username" placeholder="Votre identifiant" autocomplete="username" autofocus="autofocus"/>
                     </div>
                 </div>
 
@@ -338,14 +359,14 @@
                     <label for="password">Mot de passe</label>
                     <div class="auth-input-wrap has-toggle">
                         <svg class="leading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" autocomplete="current-password"/>
+                        <input type="password" class="auth-input" id="password" name="password" placeholder="Votre mot de passe" autocomplete="current-password"/>
                         <button type="button" class="auth-toggle-eye" id="togglePwd" aria-label="Afficher le mot de passe">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
                     </div>
                 </div>
 
-                <button type="submit" class="auth-submit" id="authSubmit" disabled="disabled">
+                <button type="submit" class="auth-submit" id="authSubmit">
                     <span class="auth-spinner"></span>
                     <span id="authSubmitLabel">Connexion</span>
                 </button>
@@ -368,18 +389,43 @@
         var authBox = document.getElementById('authBox');
         var errorBanner = document.getElementById('authError');
 
-        function refreshSubmitState() {
-            var ready = user.value.trim().length > 0 && pass.value.trim().length > 0;
-            submitBtn.disabled = !ready;
-            submitBtn.classList.toggle('is-ready', ready);
+        var fieldUser = document.getElementById('fieldUser');
+        var fieldPass = document.getElementById('fieldPass');
+        var autofilled = { username: false, password: false };
+
+        // Le bouton n'est jamais desactive : un champ auto-rempli par le navigateur reste
+        // vide pour le JS tant que l'utilisateur n'a pas interagi avec la page, ce qui
+        // bloquait la connexion. Le controle des champs vides se fait a la soumission.
+        function hasValue(input) {
+            return input.value.trim().length > 0 || autofilled[input.name];
         }
 
-        ['input', 'change', 'keyup'].forEach(function (evt) {
-            user.addEventListener(evt, refreshSubmitState);
-            pass.addEventListener(evt, refreshSubmitState);
-        });
-        window.addEventListener('load', function () {
-            setTimeout(refreshSubmitState, 150);
+        function refreshSubmitState() {
+            submitBtn.classList.toggle('is-ready', hasValue(user) && hasValue(pass));
+        }
+
+        function shake() {
+            authBox.classList.remove('auth-shake');
+            void authBox.offsetWidth;
+            authBox.classList.add('auth-shake');
+            setTimeout(function () { authBox.classList.remove('auth-shake'); }, 500);
+        }
+
+        [[user, fieldUser], [pass, fieldPass]].forEach(function (pair) {
+            var input = pair[0], field = pair[1];
+            ['input', 'change'].forEach(function (evt) {
+                input.addEventListener(evt, function () {
+                    autofilled[input.name] = false;
+                    field.classList.remove('auth-invalid');
+                    refreshSubmitState();
+                });
+            });
+            input.addEventListener('animationstart', function (e) {
+                if (e.animationName === 'auth-autofill') {
+                    autofilled[input.name] = true;
+                    refreshSubmitState();
+                }
+            });
         });
 
         toggleBtn.addEventListener('click', function () {
@@ -395,18 +441,35 @@
         });
 
         form.addEventListener('submit', function (e) {
-            if (submitBtn.disabled) { e.preventDefault(); return; }
-            submitBtn.classList.add('is-loading');
-            submitBtn.disabled = true;
+            if (submitBtn.classList.contains('is-loading')) { e.preventDefault(); return; }
+            // A la soumission, le navigateur a expose les valeurs auto-remplies.
+            var userOk = user.value.trim().length > 0;
+            var passOk = pass.value.length > 0;
+            if (!userOk || !passOk) {
+                e.preventDefault();
+                fieldUser.classList.toggle('auth-invalid', !userOk);
+                fieldPass.classList.toggle('auth-invalid', !passOk);
+                shake();
+                (userOk ? pass : user).focus();
+                return;
+            }
+            submitBtn.classList.add('is-ready', 'is-loading');
             submitLabel.textContent = 'Connexion...';
         });
 
+        // Retour arriere depuis la page suivante (bfcache) : ne pas rester bloque en chargement.
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) {
+                submitBtn.classList.remove('is-loading');
+                submitLabel.textContent = 'Connexion';
+            }
+        });
+
         if (errorBanner) {
-            authBox.classList.add('auth-shake');
-            document.getElementById('fieldUser').classList.add('auth-invalid');
-            document.getElementById('fieldPass').classList.add('auth-invalid');
+            fieldUser.classList.add('auth-invalid');
+            fieldPass.classList.add('auth-invalid');
             pass.value = '';
-            setTimeout(function () { authBox.classList.remove('auth-shake'); }, 500);
+            shake();
             pass.focus();
         }
 

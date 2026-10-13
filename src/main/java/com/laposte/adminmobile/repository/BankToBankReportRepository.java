@@ -25,7 +25,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class BankToBankReportRepository {
 
-    private static final SimpleDateFormat YYYYMMDD = new SimpleDateFormat("yyyyMMdd");
+    // SimpleDateFormat is not thread-safe: one instance per call, never a shared static.
+    private static SimpleDateFormat yyyymmdd() {
+        return new SimpleDateFormat("yyyyMMdd");
+    }
 
     /** From web/state/banbankxls.jrxml - TMoney bank-to-bank movements. */
     private static final String TMONEY_SQL =
@@ -86,8 +89,8 @@ public class BankToBankReportRepository {
     public List<BankToBankRow> findBankToBank(Date date1, Date date2, String operateur) {
         boolean flooz = "FLooz".equalsIgnoreCase(operateur);
         String sql = flooz ? FLOOZ_SQL : TMONEY_SQL;
-        long d1 = Long.parseLong(YYYYMMDD.format(date1));
-        long d2 = Long.parseLong(YYYYMMDD.format(date2));
+        long d1 = Long.parseLong(yyyymmdd().format(date1));
+        long d2 = Long.parseLong(yyyymmdd().format(date2));
         return jdbcTemplate.query(sql, (rs, rowNum) -> new BankToBankRow(
                 flooz ? rs.getString("refbank") : null,
                 rs.getBigDecimal("numero_compte"),

@@ -71,9 +71,10 @@ public class EmailUpdateController {
             redirectAttributes.addFlashAttribute("error", "Adresse e-mail obligatoire !");
         } else if (telephone == null || telephone.isBlank()) {
             redirectAttributes.addFlashAttribute("error", "Telephone obligatoire !");
+        } else if (usersService.updateEmail(telephone.trim(), email) == 0) {
+            redirectAttributes.addFlashAttribute("error", "Ce compte n'existe pas!");
         } else {
             String tel = telephone.trim();
-            usersService.updateEmail(tel, email);
 
             ModifCodesecret audit = new ModifCodesecret();
             audit.setTelephone(parseTelephone(tel));

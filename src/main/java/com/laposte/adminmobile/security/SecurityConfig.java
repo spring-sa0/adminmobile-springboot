@@ -37,10 +37,19 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                // /error public : sinon une erreur technique au login (driver, base injoignable...)
+                // redirige silencieusement vers /login sans aucun message.
+                .requestMatchers("/login", "/error", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
                 .requestMatchers("/parametres/**").hasRole("ADMINISTRATEUR")
                 .requestMatchers("/annulation-op/**").hasRole("ADMINISTRATEUR")
                 .requestMatchers("/gateway/**").hasRole("ADMINISTRATEUR")
+                .requestMatchers("/reclamations/types").hasRole("ADMINISTRATEUR")
+                // Memes regles que l'affichage du menu (fragments/menu.html) : sans elles, un
+                // profil marchand/consultation atteignait tous les ecrans en tapant l'URL.
+                .requestMatchers("/reclamations/**", "/suggestions/**", "/consultations/**", "/operations/**",
+                        "/comptes/**", "/etats/**", "/eposte/**", "/commissions/**").hasAuthority("PROFIL_USER")
+                .requestMatchers("/releves/**").hasAuthority("PROFIL_SOUSMENU")
+                .requestMatchers("/marchand/**").hasAuthority("MARCHAND")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

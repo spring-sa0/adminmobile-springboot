@@ -135,7 +135,7 @@ public class ReclamationController {
         model.addAttribute("date2", date2);
         model.addAttribute("etat", etat);
         Date d1 = WebDateUtils.parse(date1);
-        Date d2 = WebDateUtils.parse(date2);
+        Date d2 = WebDateUtils.parseEnd(date2);
         if ((!WebDateUtils.isBlank(date1) && d1 == null) || (!WebDateUtils.isBlank(date2) && d2 == null)) {
             model.addAttribute("error", "Dates invalides.");
         } else {

@@ -17,6 +17,12 @@ import jakarta.validation.constraints.Size;
 /**
  * Ported from the legacy entity {@code admin.mobile.entities.ModifCodesecret}.
  *
+ * ATTENTION : MODIF_CODESECRET est un journal ; TELEPHONE, mappe en @Id faute de vraie cle,
+ * y apparait plusieurs fois. Ne jamais passer par l'identite JPA (findById, save/merge,
+ * requete renvoyant des entites gerees) : Hibernate plante ou fusionne les lignes d'un meme
+ * numero. Ecriture par persist() seulement, lecture par expression constructeur
+ * (voir {@code ModifCodesecretRepository}).
+ *
  * Note: {@code idprofil} is a raw BigInteger FK value here (not a JPA
  * relation), unlike {@link Users#getIdprofil()} / {@link UsersEposte#getIdprofil()}
  * which map it as a @ManyToOne to {@link Profil}. Kept as-is from the legacy source.
@@ -43,6 +49,10 @@ import jakarta.validation.constraints.Size;
 public class ModifCodesecret implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    /** Width of the MOTIF column: forms must reject longer input before touching the account. */
+    public static final int MOTIF_MAX = 25;
+
     // @Max(value=?)  @Min(value=?)//if you know range of your decimal fields consider using these annotations to enforce field validation
     @Id
     @Basic(optional = false)
@@ -81,7 +91,7 @@ public class ModifCodesecret implements Serializable {
     @Size(max = 50)
     @Column(name = "UTILISATEUR")
     private String utilisateur;
-    @Size(max = 25)
+    @Size(max = MOTIF_MAX)
     @Column(name = "MOTIF")
     private String motif;
 
@@ -95,6 +105,25 @@ public class ModifCodesecret implements Serializable {
     public ModifCodesecret(BigDecimal telephone, String codeSecret) {
         this.telephone = telephone;
         this.codeSecret = codeSecret;
+    }
+
+    /** Used by the JPQL constructor expressions of {@code ModifCodesecretRepository}. */
+    public ModifCodesecret(BigDecimal telephone, String login, String pwd, Date dateCreation, Integer actif,
+                           String codeSecret, BigInteger idprofil, String origine, String nom, String prenom,
+                           Date dateetheure, String utilisateur, String motif) {
+        this.telephone = telephone;
+        this.login = login;
+        this.pwd = pwd;
+        this.dateCreation = dateCreation;
+        this.actif = actif;
+        this.codeSecret = codeSecret;
+        this.idprofil = idprofil;
+        this.origine = origine;
+        this.nom = nom;
+        this.prenom = prenom;
+        this.dateetheure = dateetheure;
+        this.utilisateur = utilisateur;
+        this.motif = motif;
     }
 
     public BigDecimal getTelephone() {

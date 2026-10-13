@@ -47,12 +47,11 @@ public class AnnulationOpController {
     /** Port of OpCtrl#annulerop(): calls the annul_op_ecoccp stored procedure. */
     @PostMapping("/annuler")
     public String annuler(@RequestParam String numop,
-                           @RequestParam(required = false) String message,
                            Authentication authentication,
                            RedirectAttributes redirectAttributes) {
         String login = authentication != null ? authentication.getName() : null;
         try {
-            recuElectroniqueService.annulopeco(Double.valueOf(numop.trim()), login, message);
+            recuElectroniqueService.annulopeco(Double.valueOf(numop.trim()), login);
             redirectAttributes.addFlashAttribute("success", "Operation annulee.");
         } catch (NumberFormatException e) {
             redirectAttributes.addFlashAttribute("error", "Numero d'operation invalide.");

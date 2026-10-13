@@ -6,8 +6,10 @@
 
 <div class="mainDiv">
     <h2>Liste des Operations Annulees</h2>
-    <!-- Port of listeopannul.xhtml: cancelled EcoCCP operations (motif_annulation not null,
-         set by the annul_op_ecoccp stored procedure - see RecuElectroniqueService#annulopeco). -->
+    <!-- Port of listeopannul.xhtml: contre-ecritures "ANNUL ..." inserees par
+         PROCEDURES.ANNUL_OP_ECOCCP (ancien_num_op = operation annulee, code_utilisateur = auteur).
+         La procedure ne stocke aucun motif. -->
+
     <div class="alert-error" th:if="${error}" th:text="${error}"></div>
 
     <form method="get" th:action="@{/etats/transactions/ecoccp-annulees}">
@@ -31,10 +33,11 @@
                 <th>Telephone</th>
                 <th>Compte</th>
                 <th>Montant</th>
-                <th>Date operation</th>
+                <th>Date annulation</th>
                 <th>Libelle Operation</th>
-                <th>Numero operation</th>
-                <th>Motif annulation</th>
+                <th>Operation annulee</th>
+                <th>Numero annulation</th>
+                <th>Annulee par</th>
             </tr>
             </thead>
             <tbody>
@@ -44,11 +47,12 @@
                 <td th:text="${item.montant}"></td>
                 <td th:text="${#dates.format(item.dateOperation, 'dd/MM/yyyy HH:mm:ss')}"></td>
                 <td th:text="${item.libelleOperation}"></td>
+                <td th:text="${item.ancienNumOp}"></td>
                 <td th:text="${item.numeroOperation}"></td>
-                <td th:text="${item.motifAnnulation}"></td>
+                <td th:text="${item.codeUtilisateur}"></td>
             </tr>
             <tr th:if="${#lists.isEmpty(results)}">
-                <td colspan="7">Il n'y a aucune operation a afficher.</td>
+                <td colspan="8">Il n'y a aucune operation a afficher.</td>
             </tr>
             </tbody>
         </table>

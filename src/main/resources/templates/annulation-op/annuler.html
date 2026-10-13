@@ -48,10 +48,6 @@
               th:if="${!#lists.isEmpty(results)}"
               onsubmit="return confirm('Voulez-vous confirmer l\'annulation de l\'operation ?');">
             <input type="hidden" name="numop" th:value="${numop}"/>
-            <div class="form-row">
-                <label for="message">Observation</label>
-                <input type="text" id="message" name="message"/>
-            </div>
             <div class="form-actions">
                 <button type="submit">Annuler Operation</button>
             </div>

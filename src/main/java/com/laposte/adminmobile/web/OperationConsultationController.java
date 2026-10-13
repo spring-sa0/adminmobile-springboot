@@ -50,7 +50,7 @@ public class OperationConsultationController {
                 model.addAttribute("error", "Veuillez renseigner les deux dates.");
             } else {
                 Date d1 = WebDateUtils.parse(date1);
-                Date d2 = WebDateUtils.parse(date2);
+                Date d2 = WebDateUtils.parseEnd(date2);
                 if (d1 == null || d2 == null) {
                     model.addAttribute("error", "Dates invalides.");
                 } else if (!hasTel) {
@@ -119,7 +119,7 @@ public class OperationConsultationController {
 
         if (WebDateUtils.hasBoth(date1, date2) && codeOperation != null) {
             Date d1 = WebDateUtils.parse(date1);
-            Date d2 = WebDateUtils.parse(date2);
+            Date d2 = WebDateUtils.parseEnd(date2);
             if (d1 == null || d2 == null) {
                 model.addAttribute("error", "Dates invalides.");
             } else {
@@ -148,7 +148,7 @@ public class OperationConsultationController {
                 model.addAttribute("error", "Veuillez renseigner les deux dates.");
             } else {
                 Date d1 = WebDateUtils.parse(date1);
-                Date d2 = WebDateUtils.parse(date2);
+                Date d2 = WebDateUtils.parseEnd(date2);
                 if (d1 == null || d2 == null) {
                     model.addAttribute("error", "Dates invalides.");
                 } else {
@@ -175,7 +175,7 @@ public class OperationConsultationController {
                 model.addAttribute("error", "Veuillez renseigner les deux dates.");
             } else {
                 Date d1 = WebDateUtils.parse(date1);
-                Date d2 = WebDateUtils.parse(date2);
+                Date d2 = WebDateUtils.parseEnd(date2);
                 if (d1 == null || d2 == null) {
                     model.addAttribute("error", "Dates invalides.");
                 } else {

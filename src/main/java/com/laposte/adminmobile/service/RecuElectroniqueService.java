@@ -141,7 +141,7 @@ public class RecuElectroniqueService {
 
     /** Cancelled EcoCCP operations in a date range - see repository-level notes. */
     public List<RecuElectronique> recupListopAnnulees(Date date1, Date date2) {
-        return recuElectroniqueRepository.findByMotifAnnulationIsNotNullAndDateOperationBetweenOrderByDateOperationDesc(
+        return recuElectroniqueRepository.findByAncienNumOpIsNotNullAndDateOperationBetweenOrderByDateOperationDesc(
                 startOfDay(date1), endOfDay(date2));
     }
 
@@ -151,22 +151,18 @@ public class RecuElectroniqueService {
     }
 
     /**
-     * Port of {@code annulopeco(numop, login, message)}: calls the Oracle stored procedure
-     * {@code procedures.annul_op_ecoccp(numop, login, message)} directly, exactly like the legacy
-     * {@code CallableStatement} did. Kept as a raw {@link StoredProcedureQuery} rather than a
-     * Spring Data {@code @Procedure} because that annotation requires a
-     * {@code @NamedStoredProcedureQuery} declared on the entity, and {@link RecuElectronique} is
-     * owned by a separate porting effort.
+     * Port of {@code annulopeco}: calls {@code procedures.annul_op_ecoccp(numerooperation, username)}.
+     * The procedure in base takes exactly these 2 parameters and stores no reason/observation:
+     * the former 3rd "message" argument made every call fail (PLS-00306). Kept as a raw
+     * {@link StoredProcedureQuery}, like {@link #restaurerop}.
      */
     @Transactional
-    public void annulopeco(Double numop, String login, String message) {
+    public void annulopeco(Double numop, String login) {
         StoredProcedureQuery query = entityManager.createStoredProcedureQuery("procedures.annul_op_ecoccp");
         query.registerStoredProcedureParameter(1, Double.class, ParameterMode.IN);
         query.registerStoredProcedureParameter(2, String.class, ParameterMode.IN);
-        query.registerStoredProcedureParameter(3, String.class, ParameterMode.IN);
         query.setParameter(1, numop);
         query.setParameter(2, login);
-        query.setParameter(3, message);
         query.execute();
     }
 
