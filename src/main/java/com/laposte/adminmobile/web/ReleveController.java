@@ -9,7 +9,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -76,9 +78,19 @@ public class ReleveController {
         return "releve-liste-edit";
     }
 
+    /** Seuls les champs du formulaire d'edition sont liables (l'id vient du chemin). */
+    @InitBinder("releve")
+    void restrictFields(WebDataBinder binder) {
+        binder.setAllowedFields("numerocompte", "intitule", "mail", "jourenvoi", "typefichier");
+    }
+
     /** Port of ReleveCtrl.onRowEdit(Releve): entityManager.merge() via ReleveService.edit(). */
     @PostMapping("/liste/{id}/edit")
     public String edit(@PathVariable Integer id, @ModelAttribute Releve releve, RedirectAttributes redirectAttributes) {
+        // merge() d'un id inexistant creerait une nouvelle ligne au lieu d'echouer.
+        if (releveService.find(id) == null) {
+            return "redirect:/releves/liste";
+        }
         releve.setIdreleve(id);
         releveService.edit(releve);
         redirectAttributes.addFlashAttribute("message", "Modification effectuee avec succes");

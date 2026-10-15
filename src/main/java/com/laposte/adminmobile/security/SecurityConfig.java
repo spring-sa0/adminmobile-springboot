@@ -3,14 +3,19 @@ package com.laposte.adminmobile.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.ExceptionMappingAuthenticationFailureHandler;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * {@code @EnableMethodSecurity} is required for {@code @PreAuthorize} on individual controller
@@ -56,7 +61,7 @@ public class SecurityConfig {
                 .loginPage("/login")
                 .loginProcessingUrl("/login")
                 .defaultSuccessUrl("/", true)
-                .failureUrl("/login?error")
+                .failureHandler(loginFailureHandler())
                 .permitAll()
             )
             .logout(logout -> logout
@@ -64,16 +69,36 @@ public class SecurityConfig {
                 .logoutSuccessUrl("/login?logout")
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
                 .permitAll()
             )
             .sessionManagement(session -> session
                 .sessionFixation().changeSessionId()
                 .maximumSessions(1)
             )
-            // Les ecrans historiques (releve Excel/PDF, Jasper) sont des formulaires
-            // classiques non-AJAX ; CSRF Spring Boot par defaut reste actif pour eux.
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"));
+            // CSRF actif partout (valeur par defaut) : l'application n'expose aucune API sans session.
+            .csrf(Customizer.withDefaults())
+            .headers(headers -> headers
+                // 'unsafe-inline' reste necessaire pour les scripts : les templates utilisent des
+                // <script> et des onclick/onsubmit en ligne. La politique bloque malgre tout le
+                // chargement de scripts externes, l'envoi de donnees vers un autre domaine et
+                // l'affichage de l'application dans une iframe (clickjacking).
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
+                        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+                                + "img-src 'self' data:; font-src 'self' data:; connect-src 'self'; "
+                                + "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"))
+                .referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.SAME_ORIGIN))
+                .frameOptions(frame -> frame.deny())
+            );
 
         return http.build();
+    }
+
+    /** Distingue le blocage temporaire (trop d'essais, voir LoginAttemptService) d'un simple echec. */
+    private AuthenticationFailureHandler loginFailureHandler() {
+        ExceptionMappingAuthenticationFailureHandler handler = new ExceptionMappingAuthenticationFailureHandler();
+        handler.setDefaultFailureUrl("/login?error");
+        handler.setExceptionMappings(Map.of(LockedException.class.getName(), "/login?locked"));
+        return handler;
     }
 }

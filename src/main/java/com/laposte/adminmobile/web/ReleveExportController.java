@@ -146,7 +146,8 @@ public class ReleveExportController {
 
     // ---------- Shared "intitule" lookup, ported from EtatbeanCtrl.intitulecompte() (p:ajax on numcpt change) ----------
 
-    @GetMapping("/intitule")
+    // text/plain : la valeur vient de la base et ne doit jamais etre interpretee comme du HTML.
+    @GetMapping(value = "/intitule", produces = MediaType.TEXT_PLAIN_VALUE)
     @ResponseBody
     public String intitule(@RequestParam String numerocompte) {
         String intitule = formatsService.getIntitule(numerocompte);

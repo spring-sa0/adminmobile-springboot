@@ -1,0 +1,10 @@
+# Le Dockerfile ne copie que pom.xml et src/, mais tout le contexte est envoye au daemon Docker :
+# on en exclut les secrets et l'historique git (qui contient d'anciens mots de passe).
+.env
+.env.*
+!.env.example
+.git
+.idea
+.vscode
+target
+*.log

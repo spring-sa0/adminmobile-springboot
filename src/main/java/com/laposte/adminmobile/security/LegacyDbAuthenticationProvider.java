@@ -3,11 +3,13 @@ package com.laposte.adminmobile.security;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.stereotype.Component;
 
 import java.sql.Connection;
@@ -17,6 +19,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+import java.util.regex.Pattern;
 
 /**
  * Portage fidele de la logique historique de {@code Userconnexion.connecterUser()}.
@@ -37,31 +41,59 @@ import java.util.List;
 @Component
 public class LegacyDbAuthenticationProvider implements AuthenticationProvider {
 
+    /**
+     * Nom d'utilisateur Oracle non quote : lettres, chiffres, _ $ #. Refuse aussi les syntaxes que
+     * le driver interprete dans le nom ("sys as sysdba", connexion proxy "user[cible]").
+     */
+    private static final Pattern ORACLE_LOGIN = Pattern.compile("[A-Za-z][A-Za-z0-9_$#]{0,127}");
+
     private final String jdbcUrl;
     private final String driverClassName;
+    private final String technicalAccount;
+    private final LoginAttemptService loginAttemptService;
 
     public LegacyDbAuthenticationProvider(
             @Value("${spring.datasource.url}") String jdbcUrl,
-            @Value("${spring.datasource.driver-class-name}") String driverClassName) {
+            @Value("${spring.datasource.driver-class-name}") String driverClassName,
+            @Value("${spring.datasource.username:}") String technicalAccount,
+            LoginAttemptService loginAttemptService) {
         this.jdbcUrl = jdbcUrl;
         this.driverClassName = driverClassName;
+        this.technicalAccount = technicalAccount;
+        this.loginAttemptService = loginAttemptService;
     }
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        String login = authentication.getName();
+        String login = authentication.getName() == null ? "" : authentication.getName().trim();
         String password = (String) authentication.getCredentials();
+        String ip = authentication.getDetails() instanceof WebAuthenticationDetails details
+                ? details.getRemoteAddress() : null;
 
-        Integer idProfil = openConnectionAndFetchProfil(login, password);
+        if (loginAttemptService.isBlocked(login, ip)) {
+            throw new LockedException("Trop de tentatives de connexion");
+        }
+
+        // Le compte technique de l'application (spring.datasource.username) ne doit jamais servir
+        // a se connecter a l'interface : des essais rates le feraient verrouiller par Oracle et
+        // couperaient toute l'application.
+        boolean refused = !ORACLE_LOGIN.matcher(login).matches()
+                || password == null || password.isEmpty()
+                || (!technicalAccount.isBlank() && technicalAccount.equalsIgnoreCase(login));
+
+        Integer idProfil = refused ? null : openConnectionAndFetchProfil(login, password);
         if (idProfil == null) {
+            loginAttemptService.loginFailed(login, ip);
             throw new BadCredentialsException("Utilisateur ou mot de passe incorrect");
         }
 
         List<GrantedAuthority> authorities = authoritiesForProfil(idProfil);
         if (authorities.isEmpty()) {
+            loginAttemptService.loginFailed(login, ip);
             throw new BadCredentialsException("Profil inconnu (" + idProfil + ")");
         }
 
+        loginAttemptService.loginSucceeded(login);
         return new UsernamePasswordAuthenticationToken(login, null, authorities);
     }
 
@@ -72,7 +104,14 @@ public class LegacyDbAuthenticationProvider implements AuthenticationProvider {
             throw new IllegalStateException("Driver JDBC introuvable: " + driverClassName, e);
         }
 
-        try (Connection connection = DriverManager.getConnection(jdbcUrl, login, password)) {
+        Properties props = new Properties();
+        props.setProperty("user", login);
+        props.setProperty("password", password);
+        // Sans delai, une base lente ou injoignable bloque le thread de la requete de login indefiniment.
+        props.setProperty("oracle.net.CONNECT_TIMEOUT", "10000");
+        props.setProperty("oracle.jdbc.ReadTimeout", "30000");
+
+        try (Connection connection = DriverManager.getConnection(jdbcUrl, props)) {
             String requete = "SELECT CODE_PROFIL FROM MBUDGET.UTILISATEUR_LOG WHERE lower(LOGIN) = ?";
             try (PreparedStatement ps = connection.prepareStatement(requete)) {
                 ps.setString(1, login == null ? null : login.toLowerCase());
