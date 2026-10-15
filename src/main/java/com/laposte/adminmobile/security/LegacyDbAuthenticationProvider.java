@@ -19,6 +19,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -71,6 +72,7 @@ public class LegacyDbAuthenticationProvider implements AuthenticationProvider {
                 ? details.getRemoteAddress() : null;
 
         if (loginAttemptService.isBlocked(login, ip)) {
+            Audit.evenement("CONNEXION_BLOQUEE", login, ip, null);
             throw new LockedException("Trop de tentatives de connexion");
         }
 
@@ -84,16 +86,19 @@ public class LegacyDbAuthenticationProvider implements AuthenticationProvider {
         Integer idProfil = refused ? null : openConnectionAndFetchProfil(login, password);
         if (idProfil == null) {
             loginAttemptService.loginFailed(login, ip);
+            Audit.evenement("CONNEXION_ECHEC", login, ip, Map.of("motif", refused ? "identifiant refuse" : "identifiants invalides"));
             throw new BadCredentialsException("Utilisateur ou mot de passe incorrect");
         }
 
         List<GrantedAuthority> authorities = authoritiesForProfil(idProfil);
         if (authorities.isEmpty()) {
             loginAttemptService.loginFailed(login, ip);
+            Audit.evenement("CONNEXION_ECHEC", login, ip, Map.of("motif", "profil inconnu " + idProfil));
             throw new BadCredentialsException("Profil inconnu (" + idProfil + ")");
         }
 
         loginAttemptService.loginSucceeded(login);
+        Audit.evenement("CONNEXION", login, ip, Map.of("profil", String.valueOf(idProfil)));
         return new UsernamePasswordAuthenticationToken(login, null, authorities);
     }
 

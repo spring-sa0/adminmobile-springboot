@@ -88,7 +88,8 @@ public interface RecuElectroniqueRepository extends JpaRepository<RecuElectroniq
      * {@code /etats/transactions/compte-a-compte}.
      */
     @Query("SELECT r FROM RecuElectronique r WHERE r.dateOperation BETWEEN :date1 AND :date2 "
-            + "AND r.telephone IN (SELECT u.telephone FROM Users u) ORDER BY r.dateOperation DESC")
+            // r.telephone porte l'indicatif 228, u.telephone non (voir UsersRepository).
+            + "AND r.telephone IN (SELECT CONCAT('228', u.telephone) FROM Users u) ORDER BY r.dateOperation DESC")
     List<RecuElectronique> findEposteScopedOperationsBetween(@Param("date1") Date date1, @Param("date2") Date date2);
 
     /**

@@ -15,7 +15,7 @@
 
     <groupId>tg.laposte</groupId>
     <artifactId>adminmobile</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
     <name>adminmobile</name>
     <description>Back-office mobile money (e-poste) - portage Spring Boot / Thymeleaf de l'application JSF legacy</description>
 
@@ -54,6 +54,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Supervision (/actuator/health, utilise par le healthcheck Docker) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
         <!-- Validation -->

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Barre de pagination des listes de resultats. N'apparait que si la liste depasse une page
+     (voir web.PaginationInterceptor). A inclure juste apres le tableau des resultats. -->
+<nav th:fragment="pager" class="pager" th:if="${pagination != null}" aria-label="Pagination des resultats">
+    <span class="pager-info"
+          th:text="|Lignes ${pagination.debut} a ${pagination.fin} sur ${#numbers.formatInteger(pagination.total, 1, 'WHITESPACE')}|">
+        Lignes 1 a 100 sur 32 018</span>
+    <span class="pager-links">
+        <a th:unless="${pagination.premiere}" th:href="${pagination.url(pagination.page - 1)}" class="pager-btn">&lsaquo; Precedent</a>
+        <span th:if="${pagination.premiere}" class="pager-btn is-disabled">&lsaquo; Precedent</span>
+
+        <th:block th:each="n : ${pagination.numeros}">
+            <span th:if="${n == 0}" class="pager-gap">&hellip;</span>
+            <span th:if="${n == pagination.page}" class="pager-btn is-current" aria-current="page" th:text="${n}">2</span>
+            <a th:if="${n != 0 and n != pagination.page}" class="pager-btn" th:href="${pagination.url(n)}" th:text="${n}">3</a>
+        </th:block>
+
+        <a th:unless="${pagination.derniere}" th:href="${pagination.url(pagination.page + 1)}" class="pager-btn">Suivant &rsaquo;</a>
+        <span th:if="${pagination.derniere}" class="pager-btn is-disabled">Suivant &rsaquo;</span>
+    </span>
+</nav>
+</body>
+</html>

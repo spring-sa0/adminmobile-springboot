@@ -9,3 +9,10 @@ services:
       - .env
     ports:
       - "${SERVER_PORT:-8099}:${SERVER_PORT:-8080}"
+    volumes:
+      # Journaux technique et d'audit, conserves quand le conteneur est recree.
+      # Consultation : docker compose exec app tail -f /app/logs/audit.log
+      - logs:/app/logs
+
+volumes:
+  logs:

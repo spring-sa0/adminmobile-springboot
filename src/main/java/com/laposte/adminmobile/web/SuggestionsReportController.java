@@ -33,8 +33,9 @@ public class SuggestionsReportController {
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("results", suggestionsService.findByPeriode(d1, d2));
             }

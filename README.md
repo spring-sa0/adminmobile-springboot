@@ -9,7 +9,7 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.2.0 |
+| Version | 1.3.0 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
@@ -23,11 +23,12 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 2. [Configuration](#configuration)
 3. [Deploiement (Docker)](#deploiement-docker)
 4. [Authentification et profils](#authentification-et-profils)
-5. [Securite](#securite)
-6. [Organisation du code](#organisation-du-code)
-7. [Tests](#tests)
-8. [Points d'attention](#points-dattention)
-9. [Backlog](#backlog)
+5. [Ecrans de recherche](#ecrans-de-recherche)
+6. [Securite](#securite)
+7. [Organisation du code](#organisation-du-code)
+8. [Tests et integration continue](#tests-et-integration-continue)
+9. [Points d'attention](#points-dattention)
+10. [Backlog](#backlog)
 
 ---
 
@@ -67,6 +68,9 @@ ou via `env_file` en Docker. **Aucun identifiant ne doit etre ecrit dans le code
 | `MAX_LOGIN_ATTEMPTS` | non | `5` | Echecs de connexion avant blocage d'un identifiant |
 | `MAX_LOGIN_ATTEMPTS_PER_IP` | non | `20` | Echecs de connexion avant blocage d'une adresse IP |
 | `LOGIN_LOCK_DURATION` | non | `15m` | Duree du blocage |
+| `RECHERCHE_PERIODE_MAX_JOURS` | non | `92` | Duree maximale d'une periode de recherche |
+| `RECHERCHE_TAILLE_PAGE` | non | `100` | Lignes par page dans les listes de resultats |
+| `LOG_DIR` | non | `logs` (`/app/logs` en Docker) | Dossier des journaux |
 
 ## Deploiement (Docker)
 
@@ -83,9 +87,38 @@ docker compose up -d --build
 Verification :
 
 ```bash
-docker compose ps              # etat "healthy" apres ~40 s
+docker compose ps              # etat "healthy" apres ~1 min
 docker compose logs -f app     # attendre "Started AdminMobileApplication"
 ```
+
+Le healthcheck interroge `/actuator/health`, qui verifie aussi la connexion a Oracle : le
+conteneur passe `unhealthy` si la base est injoignable. Cette URL est publique mais ne renvoie
+que `{"status":"UP"}` ou `DOWN`, utilisable aussi par un outil de supervision externe.
+
+### Journaux
+
+Les journaux sont ecrits dans le volume Docker `logs` (`/app/logs` dans le conteneur),
+conserve quand le conteneur est recree :
+
+| Fichier | Contenu | Conservation |
+|---|---|---|
+| `adminmobile.log` | Journal technique : erreurs, references des pages d'erreur 500 | 30 jours |
+| `audit.log` | Connexions, echecs, blocages, deconnexions et **toutes les actions** (qui, IP, ecran, parametres, resultat) | 1 an |
+
+Rotation quotidienne (et a 50 Mo), anciens fichiers compresses.
+
+```bash
+docker compose exec app tail -f /app/logs/audit.log
+docker compose exec app grep "Erreur A3F9C21B" /app/logs/adminmobile.log   # reference d'une page 500
+```
+
+Exemple de ligne d'audit :
+
+```
+2026-10-15 10:12:41.208 ACTION utilisateur=AGENT1 ip=10.0.0.12 action="POST /annulation-op/annuler" numop=27198715 resultat="OK: Operation annulee."
+```
+
+Les mots de passe et le jeton CSRF n'y figurent jamais (`***`).
 
 Port expose : celui de `SERVER_PORT` s'il est defini dans `.env`, sinon **8099** cote hote
 (redirige vers 8080 dans le conteneur).
@@ -131,6 +164,27 @@ Les regles d'acces sont definies dans `security/SecurityConfig.java` et correspo
 l'affichage du menu (`templates/fragments/menu.html`) : un ecran absent du menu d'un profil
 lui est aussi refuse par URL.
 
+## Ecrans de recherche
+
+Regles communes a tous les ecrans de liste, sans code specifique dans chaque controleur :
+
+- **Periode limitee** a 92 jours (`RECHERCHE_PERIODE_MAX_JOURS`) : les operations augmentent
+  d'environ 1 000 lignes par jour, une recherche sur plusieurs annees chargerait des centaines
+  de milliers de lignes. Controle dans `WebDateUtils.erreurPeriode`.
+- **Pagination** a 100 lignes (`RECHERCHE_TAILLE_PAGE`) de toute liste exposee sous le nom
+  `results` (`web/PaginationInterceptor.java`, barre `fragments/pagination.html` a inclure
+  apres le tableau). La pagination se fait a l'affichage : c'est la limite de periode qui borne
+  le volume lu en base.
+- **Telephones et numeros de compte** : mis en forme automatiquement (`+228 90 12 34 56`,
+  `22890123456` -> `90123456` ; espaces retires des comptes) par
+  `web/SaisieNormalisationFilter.java`, puis une recherche avec une valeur invalide est
+  refusee avec un message clair (`web/SaisieValidationInterceptor.java`).
+
+Formats en base, a connaitre pour toute nouvelle requete : `USERS_EPOSTE.TELEPHONE` et
+`SPT.COMPTE_APP_LIER.TELEPHONE_CLIENT` sont sur **8 chiffres**,
+`SPT.RECU_ELECTRONIQUE.TELEPHONE` porte l'**indicatif** (`228` + 8 chiffres). Toute jointure
+entre ces tables doit ajouter `228` cote comptes.
+
 ## Securite
 
 Mesures en place (version 1.1.0) :
@@ -170,8 +224,8 @@ toute personne ayant acces aux depots.
 
 ```
 src/main/java/com/laposte/adminmobile/
-├── security/     authentification Oracle, blocage des tentatives, regles d'acces
-├── web/          controllers Spring MVC (un par ecran ou groupe d'ecrans)
+├── security/     authentification Oracle, blocage des tentatives, regles d'acces, audit
+├── web/          controllers Spring MVC, pagination, controle des saisies, pages d'erreur
 ├── service/      logique metier, appels aux procedures stockees, SMS, mails, Jasper
 ├── repository/   acces aux donnees (Spring Data JPA, requetes natives, JdbcTemplate)
 ├── entities/     entites JPA (portees du legacy)
@@ -200,20 +254,27 @@ Procedures stockees appelees : `PROCEDURES.ANNUL_OP_ECOCCP(numop, utilisateur)` 
 d'operations), plus les procedures de preparation des releves (`ReleveExportService`).
 Les SMS sont envoyes en inserant dans `IMOBILE.INFO_SMS`, lue par la passerelle SMS.
 
-## Tests
+## Tests et integration continue
 
 ```bash
 mvn test
 ```
 
 - `AllPagesTest` : affiche chaque ecran avec des services simules (sans base), execute les
-  actions POST, et verifie les regles d'acces par profil, les en-tetes de securite et la
-  protection des formulaires.
+  actions POST, et verifie les regles d'acces par profil, les en-tetes de securite, la
+  protection des formulaires, les pages d'erreur, la pagination, la limite de periode et le
+  controle des saisies.
 - `LoginAttemptServiceTest` : blocage des tentatives et refus des identifiants interdits sans
   connexion a Oracle.
+- `SaisiesEtPaginationTest`, `AuditTest` : regles de saisie, calcul des pages, nettoyage des
+  lignes d'audit.
 
 Les tests ne touchent pas la base : les requetes SQL elles-memes sont validees au demarrage
 de l'application (requetes JPQL) et par l'usage sur une base de recette.
+
+**CI** (`.github/workflows/ci.yml`) : a chaque push et pull request, GitHub Actions lance
+`mvn verify` puis construit l'image Docker. Une PR qui casse un test est signalee avant la
+fusion.
 
 ## Points d'attention
 

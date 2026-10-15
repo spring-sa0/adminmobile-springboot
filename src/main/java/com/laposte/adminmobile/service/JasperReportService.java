@@ -21,18 +21,15 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Generic JasperReports runner for the .jrxml definitions ported from the legacy webapp
  * (src/main/resources/reports/), replacing the ad-hoc fillReport()/export*() methods scattered
  * across admin.mobile.ctrl.EtatbeanCtrl.
  *
- * <p>NOTE (perf, intentional for this port): reports are compiled from .jrxml on every call via
- * {@link JasperCompileManager#compileReport(InputStream)} rather than shipping pre-compiled
- * .jasper binaries. This keeps the port simple (one source of truth, no separate build step) at
- * the cost of paying JasperReports' compilation cost on every export. A future optimization is to
- * pre-compile the .jrxml files to .jasper at build time (e.g. jasperreports-maven-plugin) and/or
- * cache the compiled {@link JasperReport} per report name in memory.
+ * <p>Reports are compiled from .jrxml (one source of truth, no separate build step) on first use,
+ * then the compiled {@link JasperReport} is cached in memory per report name.
  */
 @Service
 public class JasperReportService {
@@ -40,6 +37,7 @@ public class JasperReportService {
     private final DataSource dataSource;
     private final ResourceLoader resourceLoader;
     private final String reportsLocation;
+    private final Map<String, JasperReport> compiledReports = new ConcurrentHashMap<>();
 
     public JasperReportService(DataSource dataSource,
                                 ResourceLoader resourceLoader,
@@ -49,7 +47,16 @@ public class JasperReportService {
         this.reportsLocation = reportsLocation.endsWith("/") ? reportsLocation : reportsLocation + "/";
     }
 
+    /**
+     * Rapport compile, mis en cache apres la premiere utilisation : la compilation d'un .jrxml
+     * coute bien plus que son remplissage, et un JasperReport compile est reutilisable par
+     * plusieurs exports simultanes. Un echec de compilation n'est pas mis en cache.
+     */
     private JasperReport compile(String reportName) throws JRExceptionWrapper {
+        return compiledReports.computeIfAbsent(reportName, this::compileFromSource);
+    }
+
+    private JasperReport compileFromSource(String reportName) {
         Resource resource = resourceLoader.getResource(reportsLocation + reportName + ".jrxml");
         try (InputStream in = resource.getInputStream()) {
             return JasperCompileManager.compileReport(in);

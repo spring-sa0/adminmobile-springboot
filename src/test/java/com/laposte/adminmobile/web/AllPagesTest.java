@@ -344,6 +344,54 @@ class AllPagesTest {
     }
 
     @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void longResultListsArePaginated() throws Exception {
+        List<com.laposte.adminmobile.entities.RecuElectronique> ops = new java.util.ArrayList<>();
+        for (long i = 1; i <= 250; i++) {
+            ops.add(new com.laposte.adminmobile.entities.RecuElectronique(i));
+        }
+        Mockito.when(recuElectroniqueService.recupListopParPeriode(any(), any())).thenReturn(ops);
+
+        MvcResult result = mvc.perform(get("/etats/transactions/ecoccp?" + P + "&page=3"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Lignes 201 a 250 sur 250")))
+                .andReturn();
+        String html = result.getResponse().getContentAsString();
+        // 50 lignes de donnees sur la derniere page, et les liens gardent les filtres de la recherche.
+        assertThat(html.split("<td>2[0-5][0-9]</td>", -1).length - 1).isEqualTo(50);
+        assertThat(html).contains("date1=2026-01-01&amp;date2=2026-01-31&amp;page=2");
+
+        mvc.perform(get("/etats/transactions/ecoccp?" + P))
+                .andExpect(content().string(containsString("Lignes 1 a 100 sur 250")));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void searchPeriodIsLimited() throws Exception {
+        mvc.perform(get("/etats/transactions/global?date1=2025-01-01&date2=2026-01-31"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Periode trop longue : 92 jours maximum")));
+        mvc.perform(get("/etats/transactions/global?date1=2026-02-01&date2=2026-01-01"))
+                .andExpect(content().string(containsString("La date de debut doit preceder la date de fin")));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void phoneNumbersAreNormalizedAndValidated() throws Exception {
+        mvc.perform(get("/operations/par-client").param("telephone", "+228 90 12 34 56")
+                        .param("date1", "2026-01-01").param("date2", "2026-01-31"))
+                .andExpect(status().isOk());
+        verify(recuElectroniqueService).recupListopByTelephone(eq("22890123456"), any(), any());
+
+        // Parametres dans l'URL, comme les envoie un formulaire GET du navigateur.
+        mvc.perform(get("/operations/par-client?telephone={t}&date1=2026-01-01&date2=2026-01-31", "12ab"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("http://localhost/operations/par-client?date1=2026-01-01&date2=2026-01-31"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("8 chiffres")));
+    }
+
+    @Test
     void lockedLoginShowsDedicatedMessage() throws Exception {
         mvc.perform(get("/login?locked"))
                 .andExpect(status().isOk())

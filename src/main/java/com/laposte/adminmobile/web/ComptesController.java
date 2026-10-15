@@ -37,8 +37,9 @@ public class ComptesController {
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("total", comptesReportService.countComptes(d1, d2));
             }
@@ -56,8 +57,9 @@ public class ComptesController {
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("results", comptesReportService.listComptes(d1, d2));
             }
@@ -75,8 +77,9 @@ public class ComptesController {
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("results", comptesReportService.listComptesActifs(d1, d2));
             }
@@ -94,8 +97,9 @@ public class ComptesController {
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("results", comptesReportService.solde(d1, d2));
             }
@@ -113,8 +117,9 @@ public class ComptesController {
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("results", comptesReportService.listeSolde(d1, d2));
             }

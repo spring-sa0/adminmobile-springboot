@@ -9,6 +9,7 @@
     <!-- Port of comptelier.xhtml / CompteLierCtrl#afficherListe(). When Telephone is left
          empty, every linked account is shown (covers listecptelie.xhtml's "list all" export,
          which is not one of this module's required routes - see CompteLieController Javadoc). -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
 
     <form method="get" th:action="@{/comptes/lies}">
         <div class="form-row">
@@ -47,6 +48,7 @@
             </tr>
             </tbody>
         </table>
+        <nav th:replace="~{fragments/pagination :: pager}"></nav>
     </div>
 </div>
 

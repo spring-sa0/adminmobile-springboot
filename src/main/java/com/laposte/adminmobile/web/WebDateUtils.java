@@ -14,7 +14,35 @@ import java.util.Date;
  */
 final class WebDateUtils {
 
+    /**
+     * Duree maximale d'une periode de recherche, en jours (app.recherche.periode-max-jours, fixee au
+     * demarrage par {@link RechercheConfig}). Les operations augmentent d'environ 1 000 lignes par
+     * jour : sans borne, une recherche sur plusieurs annees chargerait des centaines de milliers de
+     * lignes en memoire.
+     */
+    static volatile int periodeMaxJours = 92;
+
+    private static final long MILLIS_PAR_JOUR = 24L * 60 * 60 * 1000;
+
     private WebDateUtils() {
+    }
+
+    /**
+     * Controle d'une periode deja analysee par {@link #parse}/{@link #parseEnd} : renvoie le message
+     * a afficher, ou null si la periode est acceptable.
+     */
+    static String erreurPeriode(Date debut, Date fin) {
+        if (debut == null || fin == null) {
+            return "Dates invalides.";
+        }
+        if (debut.after(fin)) {
+            return "La date de debut doit preceder la date de fin.";
+        }
+        long jours = (fin.getTime() - debut.getTime()) / MILLIS_PAR_JOUR + 1;
+        if (jours > periodeMaxJours) {
+            return "Periode trop longue : " + periodeMaxJours + " jours maximum. Decoupez la recherche en plusieurs periodes.";
+        }
+        return null;
     }
 
     static boolean hasBoth(String date1, String date2) {

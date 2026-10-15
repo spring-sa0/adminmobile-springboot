@@ -1,0 +1,35 @@
+package com.laposte.adminmobile.web;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+/**
+ * Regles communes a tous les ecrans : duree maximale de la periode de recherche, pagination de
+ * l'affichage, validation des telephones / numeros de compte, journal d'audit des actions.
+ */
+@Configuration
+public class RechercheConfig implements WebMvcConfigurer {
+
+    private final PaginationInterceptor paginationInterceptor;
+    private final SaisieValidationInterceptor saisieValidationInterceptor;
+    private final AuditInterceptor auditInterceptor;
+
+    public RechercheConfig(PaginationInterceptor paginationInterceptor,
+                           SaisieValidationInterceptor saisieValidationInterceptor,
+                           AuditInterceptor auditInterceptor,
+                           @Value("${app.recherche.periode-max-jours:92}") int periodeMaxJours) {
+        this.paginationInterceptor = paginationInterceptor;
+        this.saisieValidationInterceptor = saisieValidationInterceptor;
+        this.auditInterceptor = auditInterceptor;
+        WebDateUtils.periodeMaxJours = periodeMaxJours;
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(auditInterceptor);
+        registry.addInterceptor(saisieValidationInterceptor);
+        registry.addInterceptor(paginationInterceptor);
+    }
+}
