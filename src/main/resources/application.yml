@@ -69,6 +69,11 @@ app:
     # Duree maximale d'une periode de recherche (jours) et lignes par page dans les listes
     periode-max-jours: ${RECHERCHE_PERIODE_MAX_JOURS:92}
     taille-page: ${RECHERCHE_TAILLE_PAGE:100}
+  export:
+    # Nombre maximal de lignes par export de liste (voir web.ExportFilter). Au-dela, l'utilisateur
+    # est invite a reduire la periode. Le PDF est plus bas : 5 000 lignes = environ 120 pages.
+    max-lignes-excel: ${EXPORT_MAX_LIGNES_EXCEL:50000}
+    max-lignes-pdf: ${EXPORT_MAX_LIGNES_PDF:5000}
   logs:
     # Dossier des journaux adminmobile.log et audit.log (voir logback-spring.xml)
     dir: ${LOG_DIR:logs}

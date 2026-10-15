@@ -23,6 +23,7 @@
     </form>
 
     <div style="overflow-x:auto" th:if="${results != null}">
+        <div th:replace="~{fragments/export :: boutons}"></div>
         <table class="data-table">
             <thead>
             <tr>

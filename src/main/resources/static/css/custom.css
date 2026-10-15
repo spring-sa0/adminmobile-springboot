@@ -622,3 +622,26 @@ a.pager-btn:hover { border-color: var(--brand-500); color: var(--brand-500); tex
 .pager-btn.is-current { background: var(--brand-500); border-color: var(--brand-500); color: #fff; font-weight: 600; }
 .pager-btn.is-disabled { opacity: .45; }
 .pager-gap { padding: 0 4px; color: var(--gray-500); }
+
+/* ---------- Boutons d'export des listes (fragments/export.html) ---------- */
+.export-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 6px 0 10px;
+}
+.export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--gray-700);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.export-btn:hover { border-color: var(--brand-500); color: var(--brand-500); text-decoration: none; }
+.export-btn svg { width: 15px; height: 15px; }

@@ -15,7 +15,7 @@
 
     <groupId>tg.laposte</groupId>
     <artifactId>adminmobile</artifactId>
-    <version>1.3.1</version>
+    <version>1.4.0</version>
     <name>adminmobile</name>
     <description>Back-office mobile money (e-poste) - portage Spring Boot / Thymeleaf de l'application JSF legacy</description>
 
@@ -23,6 +23,8 @@
         <java.version>17</java.version>
         <jasperreports.version>6.21.5</jasperreports.version>
         <poi.version>5.5.1</poi.version>
+        <openpdf.version>1.3.32</openpdf.version>
+        <jsoup.version>1.23.2</jsoup.version>
     </properties>
 
     <dependencies>
@@ -80,6 +82,21 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
+        </dependency>
+
+        <!-- Export PDF des listes. Meme version que celle tiree par JasperReports, declaree
+             explicitement car utilisee directement (export.ExportPdf). -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>${openpdf.version}</version>
+        </dependency>
+
+        <!-- Lecture du tableau HTML rendu, pour l'export Excel / PDF des listes (export.ExtracteurTableau) -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
         </dependency>
 
         <!-- Mail (equivalent de maildao) -->

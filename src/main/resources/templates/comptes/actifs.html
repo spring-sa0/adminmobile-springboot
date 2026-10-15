@@ -26,6 +26,7 @@
 
     <div style="overflow-x:auto" th:if="${results != null}">
         <p>Nombre de comptes actifs : <strong th:text="${#lists.size(results)}"></strong></p>
+        <div th:replace="~{fragments/export :: boutons}"></div>
         <table class="data-table">
             <thead>
             <tr>

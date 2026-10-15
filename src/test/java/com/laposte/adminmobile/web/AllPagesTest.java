@@ -5,7 +5,8 @@ import com.laposte.adminmobile.security.SecurityConfig;
 import com.laposte.adminmobile.service.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import java.util.stream.Stream;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -111,8 +112,9 @@ class AllPagesTest {
         }
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
+    /** Toutes les pages GET de l'application, avec et sans criteres de recherche. */
+    static Stream<String> pages() {
+        return Stream.of(
             "/", "/login",
             "/parametres/modif-profil", "/parametres/modif-profil?telephone=90000000&numeroCompte=1",
             "/parametres/modif-password", "/parametres/modif-password?telephone=90000000",
@@ -173,8 +175,12 @@ class AllPagesTest {
             "/marchand/operations", "/marchand/operations?" + P,
             "/marchand/operations-liste", "/marchand/operations-liste?" + P,
             "/marchand/operations-par-marchand", "/marchand/operations-par-marchand?numerocompte=1&" + P,
-            "/marchand/commissions", "/marchand/commissions?" + P,
-    })
+            "/marchand/commissions", "/marchand/commissions?" + P
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("pages")
     @WithMockUser(
             authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
     void everyPageRendersForAdministrator(String url) throws Exception {
@@ -363,6 +369,125 @@ class AllPagesTest {
 
         mvc.perform(get("/etats/transactions/ecoccp?" + P))
                 .andExpect(content().string(containsString("Lignes 1 a 100 sur 250")));
+    }
+
+    /**
+     * Chaque page de l'application peut etre demandee en Excel et en PDF : soit elle contient une
+     * liste et renvoie le fichier, soit elle n'en contient pas et renvoie la page HTML. Jamais d'erreur.
+     */
+    @ParameterizedTest
+    @MethodSource("pages")
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void everyPageCanBeExported(String url) throws Exception {
+        String typePage = mvc.perform(get(url)).andReturn().getResponse().getContentType();
+        if (typePage == null || !typePage.startsWith("text/html")) {
+            return; // pas une page (telechargement, texte AJAX...) : rien a exporter
+        }
+        for (String format : List.of("xlsx", "pdf")) {
+            String type = mvc.perform(get(url + (url.contains("?") ? "&" : "?") + "export=" + format))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentType();
+            assertThat(type).as(url + " en " + format)
+                    .satisfiesAnyOf(t -> assertThat(t).startsWith("text"), t -> assertThat(t).contains(
+                            format.equals("pdf") ? "application/pdf" : "spreadsheetml"));
+        }
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void listExportContainsWholeListNotJustTheDisplayedPage() throws Exception {
+        List<com.laposte.adminmobile.entities.RecuElectronique> ops = new java.util.ArrayList<>();
+        for (long i = 1; i <= 250; i++) {
+            com.laposte.adminmobile.entities.RecuElectronique op = new com.laposte.adminmobile.entities.RecuElectronique(i);
+            op.setNumeroCompte(6310319794001000L);
+            op.setMontant(1500L * i);
+            ops.add(op);
+        }
+        Mockito.when(recuElectroniqueService.recupListopParPeriode(any(), any())).thenReturn(ops);
+
+        MvcResult xlsx = mvc.perform(get("/etats/transactions/ecoccp?" + P + "&page=2&export=xlsx"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", containsString("liste-des-operations-ecoccp-")))
+                .andExpect(header().string("Content-Disposition", containsString(".xlsx")))
+                .andReturn();
+        try (org.apache.poi.xssf.usermodel.XSSFWorkbook classeur = new org.apache.poi.xssf.usermodel.XSSFWorkbook(
+                new java.io.ByteArrayInputStream(xlsx.getResponse().getContentAsByteArray()))) {
+            org.apache.poi.ss.usermodel.Sheet feuille = classeur.getSheetAt(0);
+            assertThat(feuille.getRow(0).getCell(0).getStringCellValue()).isEqualTo("Liste des Operations EcoCCP");
+            assertThat(feuille.getRow(1).getCell(0).getStringCellValue()).isEqualTo("Date debut : 2026-01-01");
+            int entete = 5;
+            assertThat(feuille.getRow(entete).getCell(0).getStringCellValue()).isEqualTo("Telephone");
+            assertThat(feuille.getLastRowNum() - entete).as("toutes les lignes, pas la page 2").isEqualTo(250);
+            // Montant : nombre ; numero de compte (16 chiffres) : texte, sans perte de precision.
+            assertThat(feuille.getRow(entete + 1).getCell(2).getNumericCellValue()).isEqualTo(1500d);
+            assertThat(feuille.getRow(entete + 1).getCell(1).getStringCellValue()).isEqualTo("6310319794001000");
+        }
+
+        MvcResult pdf = mvc.perform(get("/etats/transactions/ecoccp?" + P + "&export=pdf"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/pdf"))
+                .andReturn();
+        assertThat(new String(pdf.getResponse().getContentAsByteArray(), 0, 5, java.nio.charset.StandardCharsets.US_ASCII))
+                .isEqualTo("%PDF-");
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void tooLongListIsNotExportedButExplained() throws Exception {
+        List<com.laposte.adminmobile.entities.RecuElectronique> ops = new java.util.ArrayList<>();
+        for (long i = 1; i <= 5001; i++) {
+            ops.add(new com.laposte.adminmobile.entities.RecuElectronique(i));
+        }
+        Mockito.when(recuElectroniqueService.recupListopParPeriode(any(), any())).thenReturn(ops);
+
+        mvc.perform(get("/etats/transactions/ecoccp?" + P + "&export=pdf"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+                .andExpect(content().string(containsString("Export PDF limite a 5000 lignes (5001 trouvees)")))
+                .andExpect(content().string(containsString("Lignes 1 a 100 sur 5")));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void actionColumnsAreNotExported() throws Exception {
+        MvcResult xlsx = mvc.perform(get("/releves/liste?export=xlsx")).andExpect(status().isOk()).andReturn();
+        try (org.apache.poi.xssf.usermodel.XSSFWorkbook classeur = new org.apache.poi.xssf.usermodel.XSSFWorkbook(
+                new java.io.ByteArrayInputStream(xlsx.getResponse().getContentAsByteArray()))) {
+            org.apache.poi.ss.usermodel.Row entete = classeur.getSheetAt(0).getRow(3);
+            List<String> colonnes = new java.util.ArrayList<>();
+            entete.forEach(c -> colonnes.add(c.getStringCellValue()));
+            assertThat(colonnes).containsExactly("Numero Compte", "Intitule Compte", "Mail", "Frequence", "Format");
+        }
+    }
+
+    /** L'export suit les regles d'acces de la page : pas de fichier sans les droits sur l'ecran. */
+    @Test
+    void exportRespectsPageAccessRules() throws Exception {
+        mvc.perform(get("/etats/transactions/ecoccp?" + P + "&export=xlsx"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("http://localhost/login"));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_MARCHAND", "MARCHAND"})
+    void merchantCannotExportBackOfficeLists() throws Exception {
+        mvc.perform(get("/etats/transactions/ecoccp?" + P + "&export=pdf")).andExpect(status().isForbidden());
+    }
+
+    /** Toute liste affichee (tableau data-table) doit proposer l'export Excel / PDF. */
+    @Test
+    void everyListTemplateOffersExport() throws Exception {
+        org.springframework.core.io.Resource[] templates = new org.springframework.core.io.support.PathMatchingResourcePatternResolver()
+                .getResources("classpath:templates/**/*.html");
+        int listes = 0;
+        for (org.springframework.core.io.Resource template : templates) {
+            String html = template.getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+            if (html.contains("<table class=\"data-table\"")) {
+                listes++;
+                assertThat(html).as(template.getFilename()).contains("fragments/export :: boutons");
+            }
+        }
+        assertThat(listes).isEqualTo(58);
     }
 
     @Test
