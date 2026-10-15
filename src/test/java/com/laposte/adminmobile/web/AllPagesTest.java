@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -30,6 +31,8 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -55,6 +58,12 @@ class AllPagesTest {
 
     @Autowired
     private SuggestionsService suggestionsService;
+
+    @Autowired
+    private SupportService supportService;
+
+    @Autowired
+    private TypeReclammationService typeReclammationService;
 
     @TestConfiguration
     static class MockServices {
@@ -263,6 +272,38 @@ class AllPagesTest {
         mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "abc"))
                 .andExpect(status().is3xxRedirection());
         verify(recuElectroniqueService, never()).annulopeco(any(), any());
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void creationFormsIgnoreInjectedIds() throws Exception {
+        Mockito.when(supportService.getSupportenreg(anyString())).thenReturn(List.of());
+        mvc.perform(post("/parametres/creation-support").with(csrf()).param("idsupport", "5")
+                .param("codeutilisateur", "u").param("nomsupport", "n").param("prenomsupport", "p")
+                .param("telephonsupport", "91234567").param("mailsupport", "a@laposte.tg"))
+                .andExpect(status().is3xxRedirection());
+        verify(supportService).create(Mockito.argThat(s -> s.getIdsupport() == null));
+
+        Mockito.when(typeReclammationService.getTypeenreg(anyString())).thenReturn(List.of());
+        mvc.perform(post("/reclamations/types").with(csrf()).param("idtype", "5").param("libellerecla", "Autre"))
+                .andExpect(status().is3xxRedirection());
+        verify(typeReclammationService).create(Mockito.argThat(t -> t.getIdtype() == null));
+    }
+
+    @Test
+    void securityHeadersAreSent() throws Exception {
+        mvc.perform(get("/login"))
+                .andExpect(header().string("Content-Security-Policy", containsString("frame-ancestors 'none'")))
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(header().string("Referrer-Policy", "same-origin"));
+    }
+
+    @Test
+    void lockedLoginShowsDedicatedMessage() throws Exception {
+        mvc.perform(get("/login?locked"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Trop de tentatives")));
     }
 
     @Test

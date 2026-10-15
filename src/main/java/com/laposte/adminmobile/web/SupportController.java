@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -29,6 +31,15 @@ public class SupportController {
     @Autowired
     public SupportController(SupportService supportService) {
         this.supportService = supportService;
+    }
+
+    /**
+     * Seuls les champs du formulaire sont liables : sans cette liste, un champ "idsupport" ajoute
+     * a la requete transformait la creation en ecrasement d'un support existant (save = merge).
+     */
+    @InitBinder("support")
+    void restrictFields(WebDataBinder binder) {
+        binder.setAllowedFields("codeutilisateur", "nomsupport", "prenomsupport", "telephonsupport", "mailsupport");
     }
 
     @GetMapping("/parametres/creation-support")

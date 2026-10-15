@@ -8,7 +8,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -28,6 +30,12 @@ public class TypeReclamationController {
     @Autowired
     public TypeReclamationController(TypeReclammationService typeReclammationService) {
         this.typeReclammationService = typeReclammationService;
+    }
+
+    /** Seul le libelle est liable : un "idtype" ajoute a la requete ecrasait un type existant. */
+    @InitBinder("typeReclammation")
+    void restrictFields(WebDataBinder binder) {
+        binder.setAllowedFields("libellerecla");
     }
 
     @PreAuthorize("hasRole('ADMINISTRATEUR')")

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Erreur')}"></head>
+<body>
+<!-- Page d'erreur generique : n'affiche volontairement ni message d'exception, ni trace, ni SQL
+     (voir server.error.* dans application.yml). Le detail est dans les logs du serveur. -->
+<div class="mainDiv" style="max-width:560px;margin:80px auto;text-align:center">
+    <h2 th:switch="${status}">
+        <span th:case="403">Acces refuse</span>
+        <span th:case="404">Page introuvable</span>
+        <span th:case="*">Une erreur est survenue</span>
+    </h2>
+    <p th:switch="${status}">
+        <span th:case="403">Vous n'avez pas les droits necessaires pour acceder a cette page.</span>
+        <span th:case="404">La page demandee n'existe pas.</span>
+        <span th:case="*">L'operation n'a pas pu aboutir. Si le probleme persiste, contactez l'administrateur
+            en indiquant l'heure de l'erreur.</span>
+    </p>
+    <p style="color:#8a969a;font-size:.85rem" th:if="${status}" th:text="'Code ' + ${status}">Code 500</p>
+    <p><a th:href="@{/}">Retour a l'accueil</a></p>
+</div>
+</body>
+</html>
