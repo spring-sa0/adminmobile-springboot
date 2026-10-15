@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Boutons d'export de la liste affichee, a placer juste avant le tableau (class="data-table").
+     Le fichier reprend toute la liste (pas seulement la page affichee) avec les memes colonnes
+     que l'ecran : voir web.ExportFilter. -->
+<div th:fragment="boutons" class="export-actions" th:if="${liensExport != null}">
+    <a class="export-btn" th:href="${liensExport.xlsx}" title="Exporter toute la liste au format Excel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 12 6 6M15 12l-6 6"/></svg>
+        Excel
+    </a>
+    <a class="export-btn" th:href="${liensExport.pdf}" title="Exporter toute la liste au format PDF">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 15h6M9 18h4"/></svg>
+        PDF
+    </a>
+</div>
+</body>
+</html>

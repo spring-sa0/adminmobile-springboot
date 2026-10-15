@@ -9,11 +9,11 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.3.1 |
+| Version | 1.4.0 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
-| Etats | JasperReports 6.21 (`.jrxml` compiles a la volee), Apache POI (Excel) |
+| Etats / exports | JasperReports 6.21, Apache POI (Excel), OpenPDF (PDF), jsoup |
 
 ---
 
@@ -71,6 +71,8 @@ ou via `env_file` en Docker. **Aucun identifiant ne doit etre ecrit dans le code
 | `RECHERCHE_PERIODE_MAX_JOURS` | non | `92` | Duree maximale d'une periode de recherche |
 | `RECHERCHE_TAILLE_PAGE` | non | `100` | Lignes par page dans les listes de resultats |
 | `LOG_DIR` | non | `logs` (`/app/logs` en Docker) | Dossier des journaux |
+| `EXPORT_MAX_LIGNES_EXCEL` | non | `50000` | Lignes maximum par export Excel d'une liste |
+| `EXPORT_MAX_LIGNES_PDF` | non | `5000` | Lignes maximum par export PDF d'une liste |
 
 ## Deploiement (Docker)
 
@@ -180,6 +182,21 @@ Regles communes a tous les ecrans de liste, sans code specifique dans chaque con
   `web/SaisieNormalisationFilter.java`, puis une recherche avec une valeur invalide est
   refusee avec un message clair (`web/SaisieValidationInterceptor.java`).
 
+- **Export Excel / PDF** de toute liste affichee (boutons au-dessus du tableau). Le fichier
+  contient **toute la liste**, pas seulement la page affichee, avec les memes colonnes que
+  l'ecran, le titre, les criteres de recherche, la date et l'auteur de l'export. Plafonds :
+  50 000 lignes en Excel, 5 000 en PDF (`EXPORT_MAX_LIGNES_EXCEL` / `EXPORT_MAX_LIGNES_PDF`) ;
+  au-dela, la page s'affiche avec un message. Chaque export est trace dans `audit.log`
+  (evenement `EXPORT`). Les regles d'acces de l'ecran s'appliquent a son export.
+
+  Fonctionnement (`web/ExportFilter.java`) : la page est rendue normalement avec
+  `?export=xlsx|pdf`, sans pagination, puis son tableau `class="data-table"` est converti en
+  fichier (`export/ExtracteurTableau.java`, `ExportExcel`, `ExportPdf`). Tout nouvel ecran est
+  donc exportable sans code supplementaire : il suffit d'inclure
+  `<div th:replace="~{fragments/export :: boutons}"></div>` avant le tableau (verifie par les
+  tests). Les colonnes d'action (boutons, formulaires) ou a en-tete vide ne sont pas exportees ;
+  la classe `no-export` exclut une colonne ou un tableau.
+
 Formats en base, a connaitre pour toute nouvelle requete : `USERS_EPOSTE.TELEPHONE` et
 `SPT.COMPTE_APP_LIER.TELEPHONE_CLIENT` sont sur **8 chiffres**,
 `SPT.RECU_ELECTRONIQUE.TELEPHONE` porte l'**indicatif** (`228` + 8 chiffres). Toute jointure
@@ -229,6 +246,7 @@ src/main/java/com/laposte/adminmobile/
 ├── service/      logique metier, appels aux procedures stockees, SMS, mails, Jasper
 ├── repository/   acces aux donnees (Spring Data JPA, requetes natives, JdbcTemplate)
 ├── entities/     entites JPA (portees du legacy)
+├── export/       export Excel / PDF des listes affichees
 └── util/         utilitaires (generation de mots de passe)
 
 src/main/resources/

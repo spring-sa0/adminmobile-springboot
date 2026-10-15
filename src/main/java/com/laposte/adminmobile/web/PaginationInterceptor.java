@@ -33,7 +33,8 @@ public class PaginationInterceptor implements HandlerInterceptor {
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
                            ModelAndView mav) {
-        if (mav == null || !"GET".equals(request.getMethod())
+        // Un export porte sur toute la liste, pas sur la page affichee (voir ExportFilter).
+        if (mav == null || !"GET".equals(request.getMethod()) || ExportInterceptor.exportEnCours(request)
                 || (mav.getViewName() != null && mav.getViewName().startsWith("redirect:"))
                 || !(mav.getModel().get(RESULTATS) instanceof List<?> resultats)
                 || resultats.size() <= taillePage) {
