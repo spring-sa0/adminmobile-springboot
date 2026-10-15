@@ -9,7 +9,7 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.1.0 |
+| Version | 1.2.0 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
@@ -150,8 +150,11 @@ Mesures en place (version 1.1.0) :
   donnees vers un autre domaine et l'affichage dans une iframe.
 - **Cookie de session** `HttpOnly`, `SameSite=Lax`, `Secure` derriere un proxy HTTPS ;
   session limitee a 30 min d'inactivite et a une session simultanee par utilisateur.
-- **Pages d'erreur** sans trace, message d'exception ni SQL (`templates/error.html`) ; le
-  detail reste dans les logs.
+- **Pages d'erreur** sans trace, message d'exception ni SQL : `templates/error/404.html`,
+  `templates/error/5xx.html` (toutes les erreurs serveur) et `templates/error.html` (autres
+  codes : 403, 400...). Chaque erreur serveur recoit une reference affichee a l'utilisateur et
+  journalisee avec l'exception (`web/ErrorReferenceAttributes.java`) : rechercher
+  `Erreur <reference>` dans les logs pour en retrouver la cause.
 - **Formulaires** : seuls les champs affiches sont liables (protection contre le
   *mass assignment*).
 - **SQL** entierement parametre (JPQL, `JdbcTemplate`, rapports Jasper en `$P{}`).

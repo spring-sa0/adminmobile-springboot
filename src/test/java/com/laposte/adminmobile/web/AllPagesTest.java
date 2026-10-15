@@ -11,9 +11,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.autoconfigure.web.WebProperties;
+import org.springframework.boot.autoconfigure.web.servlet.error.DefaultErrorViewResolver;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import jakarta.servlet.RequestDispatcher;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -23,6 +28,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesPattern;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * database. Catches broken templates, unknown properties, missing routes and access-rule gaps.
  */
 @WebMvcTest
-@Import({SecurityConfig.class, AllPagesTest.MockServices.class})
+@Import({SecurityConfig.class, ErrorReferenceAttributes.class, AllPagesTest.MockServices.class})
 class AllPagesTest {
 
     private static final String P = "date1=2026-01-01&date2=2026-01-31";
@@ -67,6 +74,15 @@ class AllPagesTest {
 
     @TestConfiguration
     static class MockServices {
+        /**
+         * @WebMvcTest n'enregistre pas le resolveur qui choisit error/404.html, error/5xx.html...
+         * selon le code HTTP (il retomberait toujours sur error.html) : on le declare comme en prod.
+         */
+        @Bean
+        DefaultErrorViewResolver errorViewResolver(ApplicationContext context) {
+            return new DefaultErrorViewResolver(context, new WebProperties.Resources());
+        }
+
         @Bean
         static BeanDefinitionRegistryPostProcessor registerMocks() {
             return new BeanDefinitionRegistryPostProcessor() {
@@ -297,6 +313,34 @@ class AllPagesTest {
                 .andExpect(header().string("X-Frame-Options", "DENY"))
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(header().string("Referrer-Policy", "same-origin"));
+    }
+
+    @Test
+    void serverErrorPageShowsReferenceButNoTechnicalDetail() throws Exception {
+        mvc.perform(get("/error").accept(MediaType.TEXT_HTML)
+                        .requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 500)
+                        .requestAttr(RequestDispatcher.ERROR_REQUEST_URI, "/consultations/operations")
+                        .requestAttr(RequestDispatcher.ERROR_EXCEPTION,
+                                new IllegalStateException("ORA-00904: \"RE1_0\".\"MOTIF_ANNULATION\" select re1_0.numero_operation")))
+                .andExpect(status().isInternalServerError())
+                .andExpect(content().string(containsString("Une erreur est survenue")))
+                .andExpect(content().string(matchesPattern("(?s).*reference\\s*<strong>[0-9A-F]{8}</strong>.*")))
+                .andExpect(content().string(not(containsString("ORA-"))))
+                .andExpect(content().string(not(containsString("select"))))
+                .andExpect(content().string(not(containsString("IllegalStateException"))));
+    }
+
+    @Test
+    void notFoundAndForbiddenHaveDedicatedPages() throws Exception {
+        mvc.perform(get("/error").accept(MediaType.TEXT_HTML)
+                        .requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 404))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string(containsString("Page introuvable")))
+                .andExpect(content().string(not(containsString("class=\"err-ref\""))));
+        mvc.perform(get("/error").accept(MediaType.TEXT_HTML)
+                        .requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 403))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string(containsString("Acces refuse")));
     }
 
     @Test

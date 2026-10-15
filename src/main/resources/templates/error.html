@@ -2,22 +2,33 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/head :: head('Erreur')}"></head>
 <body>
-<!-- Page d'erreur generique : n'affiche volontairement ni message d'exception, ni trace, ni SQL
-     (voir server.error.* dans application.yml). Le detail est dans les logs du serveur. -->
-<div class="mainDiv" style="max-width:560px;margin:80px auto;text-align:center">
-    <h2 th:switch="${status}">
-        <span th:case="403">Acces refuse</span>
-        <span th:case="404">Page introuvable</span>
-        <span th:case="*">Une erreur est survenue</span>
-    </h2>
-    <p th:switch="${status}">
-        <span th:case="403">Vous n'avez pas les droits necessaires pour acceder a cette page.</span>
-        <span th:case="404">La page demandee n'existe pas.</span>
-        <span th:case="*">L'operation n'a pas pu aboutir. Si le probleme persiste, contactez l'administrateur
-            en indiquant l'heure de l'erreur.</span>
-    </p>
-    <p style="color:#8a969a;font-size:.85rem" th:if="${status}" th:text="'Code ' + ${status}">Code 500</p>
-    <p><a th:href="@{/}">Retour a l'accueil</a></p>
+<link rel="stylesheet" th:href="@{/css/error.css}"/>
+
+<!-- Repli pour les codes sans page dediee (403, 400, 405...). 404 -> error/404.html,
+     5xx -> error/5xx.html. Aucun message d'exception ni trace (server.error.* dans application.yml). -->
+<div class="err-page">
+    <div class="err-card">
+        <div class="err-icon">
+            <svg th:if="${status == 403}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <svg th:unless="${status == 403}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        </div>
+        <p class="err-code" th:if="${status}" th:text="${status}">400</p>
+        <h1 class="err-title" th:switch="${status}">
+            <span th:case="403">Acces refuse</span>
+            <span th:case="*">Requete invalide</span>
+        </h1>
+        <p class="err-text" th:switch="${status}">
+            <span th:case="403">Votre profil ne permet pas d'acceder a cette page. Si vous pensez que
+                c'est une erreur, contactez l'administrateur.</span>
+            <span th:case="*">La requete n'a pas pu etre traitee. Revenez a la page precedente et
+                verifiez les informations saisies.</span>
+        </p>
+        <div class="err-actions">
+            <a class="err-btn" th:href="@{/}">Retour a l'accueil</a>
+            <a class="err-btn secondary" href="#" onclick="history.back(); return false;">Page precedente</a>
+        </div>
+        <p class="err-footer">ADMINISTRATION &middot; EcoCCP &middot; E-Poste</p>
+    </div>
 </div>
 </body>
 </html>

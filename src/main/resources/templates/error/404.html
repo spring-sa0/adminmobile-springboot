@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Page introuvable')}"></head>
+<body>
+<link rel="stylesheet" th:href="@{/css/error.css}"/>
+
+<div class="err-page">
+    <div class="err-card">
+        <div class="err-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M8.5 8.5l5 5M13.5 8.5l-5 5"/></svg>
+        </div>
+        <p class="err-code">404</p>
+        <h1 class="err-title">Page introuvable</h1>
+        <p class="err-text">
+            La page demandee n'existe pas ou a ete deplacee. Verifiez l'adresse, ou repartez
+            depuis l'accueil.
+        </p>
+        <div class="err-actions">
+            <a class="err-btn" th:href="@{/}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+                Retour a l'accueil
+            </a>
+            <a class="err-btn secondary" href="#" onclick="history.back(); return false;">Page precedente</a>
+        </div>
+        <p class="err-footer">ADMINISTRATION &middot; EcoCCP &middot; E-Poste</p>
+    </div>
+</div>
+</body>
+</html>

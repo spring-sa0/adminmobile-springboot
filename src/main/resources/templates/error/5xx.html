@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Erreur serveur')}"></head>
+<body>
+<link rel="stylesheet" th:href="@{/css/error.css}"/>
+
+<!-- Toutes les erreurs serveur (500, 502, 503...). Volontairement aucun detail technique :
+     la reference permet de retrouver l'exception dans les logs (voir ErrorReferenceAttributes).
+     Pas de bouton "Reessayer" : recharger renverrait un formulaire POST (annulation, parametrage...). -->
+<div class="err-page is-server">
+    <div class="err-card">
+        <div class="err-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        </div>
+        <p class="err-code" th:text="${status} ?: 500">500</p>
+        <h1 class="err-title" th:text="${status == 503} ? 'Service momentanement indisponible' : 'Une erreur est survenue'">Une erreur est survenue</h1>
+        <p class="err-text">
+            L'operation n'a pas pu aboutir suite a un probleme technique. Avant de recommencer
+            une operation sensible (annulation, parametrage...), verifiez qu'elle n'a pas deja
+            ete prise en compte.
+        </p>
+        <p class="err-ref" th:if="${reference}">
+            Si le probleme persiste, communiquez a l'administrateur la reference
+            <strong th:text="${reference}">A3F9C21B</strong>
+            <span th:if="${timestamp}" th:text="'(' + ${#dates.format(timestamp, 'dd/MM/yyyy HH:mm:ss')} + ')'"></span>
+        </p>
+        <div class="err-actions">
+            <a class="err-btn" th:href="@{/}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+                Retour a l'accueil
+            </a>
+            <a class="err-btn secondary" href="#" onclick="history.back(); return false;">Page precedente</a>
+        </div>
+        <p class="err-footer">ADMINISTRATION &middot; EcoCCP &middot; E-Poste</p>
+    </div>
+</div>
+</body>
+</html>

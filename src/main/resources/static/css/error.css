@@ -1,0 +1,115 @@
+/* Pages d'erreur (templates/error.html, error/404.html, error/5xx.html).
+   S'appuie sur les variables de custom.css : suit donc le mode clair/sombre. */
+
+.err-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    background:
+        radial-gradient(circle at 15% 15%, var(--brand-100) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(242, 183, 5, .10) 0%, transparent 40%),
+        var(--gray-50);
+}
+
+.err-card {
+    width: 100%;
+    max-width: 520px;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 44px 36px 36px;
+    animation: err-rise .45s ease both;
+}
+
+@keyframes err-rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.err-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand-100);
+    color: var(--brand-500);
+}
+.err-icon svg { width: 34px; height: 34px; }
+.err-page.is-server .err-icon { background: var(--danger-bg); color: var(--danger); }
+
+.err-code {
+    margin: 0;
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+    color: var(--heading-accent);
+}
+.err-page.is-server .err-code { color: var(--danger); }
+
+.err-title {
+    margin: 10px 0 8px;
+    font-size: 20px;
+    color: var(--gray-900);
+}
+
+.err-text {
+    margin: 0 auto 26px;
+    max-width: 400px;
+    color: var(--gray-600);
+}
+
+.err-ref {
+    margin: -10px auto 26px;
+    padding: 10px 14px;
+    max-width: 360px;
+    border-radius: var(--radius-md);
+    background: var(--gray-100);
+    color: var(--gray-700);
+    font-size: 13px;
+}
+.err-ref strong {
+    font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+    letter-spacing: 1px;
+    color: var(--gray-900);
+}
+
+.err-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.err-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--brand-500);
+    background: var(--brand-500);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+}
+.err-btn:hover { background: var(--brand-600); border-color: var(--brand-600); color: #fff; text-decoration: none; }
+.err-btn.secondary { background: transparent; color: var(--gray-700); border-color: var(--gray-300); }
+.err-btn.secondary:hover { background: var(--gray-100); color: var(--gray-900); border-color: var(--gray-400); }
+.err-btn svg { width: 16px; height: 16px; }
+
+.err-footer {
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--gray-500);
+}
