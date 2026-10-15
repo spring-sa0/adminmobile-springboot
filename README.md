@@ -9,7 +9,7 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.3.0 |
+| Version | 1.3.1 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
@@ -268,6 +268,10 @@ mvn test
   connexion a Oracle.
 - `SaisiesEtPaginationTest`, `AuditTest` : regles de saisie, calcul des pages, nettoyage des
   lignes d'audit.
+- `JasperFontsTest` : toute police citee dans un `.jrxml` doit etre embarquee
+  (`fonts/fonts.xml` : Arial et Times New Roman sont fournies par Liberation Sans / Serif, de
+  memes metriques, car absentes sous Linux), et les rapports se remplissent et s'exportent
+  sans base.
 
 Les tests ne touchent pas la base : les requetes SQL elles-memes sont validees au demarrage
 de l'application (requetes JPQL) et par l'usage sur une base de recette.
