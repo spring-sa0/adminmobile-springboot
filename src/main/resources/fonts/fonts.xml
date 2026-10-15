@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Polices des rapports JasperReports, embarquees dans l'application pour ne pas dependre des
+  polices installees sur le serveur (Arial et Times New Roman n'existent pas sous Linux).
+
+  Liberation Sans / Liberation Serif (licence SIL OFL, fonts/liberation/LICENSE-OFL.txt) ont
+  exactement les memes metriques qu'Arial / Times New Roman : la mise en page des rapports est
+  identique. Elles sont declarees sous les noms utilises dans les .jrxml, qu'il n'y a donc pas
+  a modifier ; les exports Excel gardent le nom "Arial" dans les cellules.
+  Toute nouvelle police utilisee dans un .jrxml doit etre ajoutee ici (verifie par
+  JasperFontsTest).
+-->
+<fontFamilies>
+
+    <fontFamily name="Arial">
+        <normal>fonts/liberation/LiberationSans-Regular.ttf</normal>
+        <bold>fonts/liberation/LiberationSans-Bold.ttf</bold>
+        <italic>fonts/liberation/LiberationSans-Italic.ttf</italic>
+        <boldItalic>fonts/liberation/LiberationSans-BoldItalic.ttf</boldItalic>
+        <pdfEncoding>Identity-H</pdfEncoding>
+        <pdfEmbedded>true</pdfEmbedded>
+        <exportFonts>
+            <export key="net.sf.jasperreports.html">Arial, Helvetica, sans-serif</export>
+            <export key="net.sf.jasperreports.xhtml">Arial, Helvetica, sans-serif</export>
+        </exportFonts>
+    </fontFamily>
+
+    <fontFamily name="Times New Roman">
+        <normal>fonts/liberation/LiberationSerif-Regular.ttf</normal>
+        <bold>fonts/liberation/LiberationSerif-Bold.ttf</bold>
+        <italic>fonts/liberation/LiberationSerif-Italic.ttf</italic>
+        <boldItalic>fonts/liberation/LiberationSerif-BoldItalic.ttf</boldItalic>
+        <pdfEncoding>Identity-H</pdfEncoding>
+        <pdfEmbedded>true</pdfEmbedded>
+        <exportFonts>
+            <export key="net.sf.jasperreports.html">'Times New Roman', Times, serif</export>
+            <export key="net.sf.jasperreports.xhtml">'Times New Roman', Times, serif</export>
+        </exportFonts>
+    </fontFamily>
+
+</fontFamilies>

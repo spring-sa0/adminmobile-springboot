@@ -596,3 +596,29 @@ button[type="reset"]:hover, .btn-secondary:hover { background: var(--gray-50); b
     .mainDiv, footer, .app-footer { margin-left: 16px; margin-right: 16px; }
     .sidebar-nav { max-height: 320px; }
 }
+/* ---------- Pagination des listes (fragments/pagination.html) ---------- */
+.pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 14px 0 6px;
+}
+.pager-info { font-size: 0.85rem; color: var(--gray-600); }
+.pager-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.pager-btn {
+    min-width: 34px;
+    padding: 6px 10px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--gray-700);
+    font-size: 0.85rem;
+    text-align: center;
+    text-decoration: none;
+}
+a.pager-btn:hover { border-color: var(--brand-500); color: var(--brand-500); text-decoration: none; }
+.pager-btn.is-current { background: var(--brand-500); border-color: var(--brand-500); color: #fff; font-weight: 600; }
+.pager-btn.is-disabled { opacity: .45; }
+.pager-gap { padding: 0 4px; color: var(--gray-500); }

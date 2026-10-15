@@ -33,8 +33,9 @@ public class RecapController {
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("results", recapReportService.recapParClient(d1, d2));
             }
@@ -52,8 +53,9 @@ public class RecapController {
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("results", recapReportService.recapParCompte(d1, d2));
             }
@@ -71,8 +73,9 @@ public class RecapController {
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("results", recapReportService.recapParProduit(d1, d2));
             }
@@ -90,8 +93,9 @@ public class RecapController {
         if (WebDateUtils.hasBoth(date1, date2)) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("results", recapReportService.recapSouscriptions(d1, d2));
             }

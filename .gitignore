@@ -8,3 +8,6 @@ target/
 
 # Secrets locaux
 .env
+
+# Journaux locaux (logback-spring.xml)
+logs/

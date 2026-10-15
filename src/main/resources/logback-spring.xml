@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Journaux de l'application, en plus de la console (docker compose logs) :
+    - adminmobile.log : journal technique (erreurs, references des pages 500...), 30 jours conserves ;
+    - audit.log       : connexions et actions des utilisateurs (logger AUDIT), 1 an conserve.
+  Rotation quotidienne, et a 50 Mo dans la journee. Dossier : app.logs.dir (variable LOG_DIR,
+  "logs" par defaut ; /app/logs dans l'image Docker, monte sur un volume).
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <springProperty scope="context" name="LOG_DIR" source="app.logs.dir" defaultValue="logs"/>
+
+    <appender name="FICHIER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/adminmobile.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/adminmobile.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="AUDIT_FICHIER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/audit.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/audit.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>365</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <logger name="AUDIT" level="INFO" additivity="false">
+        <appender-ref ref="AUDIT_FICHIER"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FICHIER"/>
+    </root>
+</configuration>

@@ -22,8 +22,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class MarchandReportRepository {
 
+    // RECU_ELECTRONIQUE.TELEPHONE porte l'indicatif (228 + 8 chiffres), USERS_EPOSTE.TELEPHONE non.
     private static final String MERCHANT_TEL_SUBQUERY =
-            "(SELECT telephone FROM EPOSTE.USERS_EPOSTE WHERE idprofil = 2)";
+            "(SELECT '228' || telephone FROM EPOSTE.USERS_EPOSTE WHERE idprofil = 2)";
 
     private static final String SQL_OPERATIONS =
             "SELECT r.telephone, r.numero_compte, r.montant, r.date_operation, "

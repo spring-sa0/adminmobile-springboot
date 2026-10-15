@@ -45,6 +45,8 @@ public class SecurityConfig {
                 // /error public : sinon une erreur technique au login (driver, base injoignable...)
                 // redirige silencieusement vers /login sans aucun message.
                 .requestMatchers("/login", "/error", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+                // Healthcheck Docker / supervision : renvoie seulement UP ou DOWN (show-details: never).
+                .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/parametres/**").hasRole("ADMINISTRATEUR")
                 .requestMatchers("/annulation-op/**").hasRole("ADMINISTRATEUR")
                 .requestMatchers("/gateway/**").hasRole("ADMINISTRATEUR")
@@ -70,6 +72,8 @@ public class SecurityConfig {
                 .invalidateHttpSession(true)
                 .clearAuthentication(true)
                 .deleteCookies("JSESSIONID")
+                .addLogoutHandler((request, response, authentication) -> Audit.evenement("DECONNEXION",
+                        authentication != null ? authentication.getName() : null, request.getRemoteAddr(), null))
                 .permitAll()
             )
             .sessionManagement(session -> session

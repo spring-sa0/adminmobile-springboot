@@ -51,8 +51,9 @@ public class OperationConsultationController {
             } else {
                 Date d1 = WebDateUtils.parse(date1);
                 Date d2 = WebDateUtils.parseEnd(date2);
-                if (d1 == null || d2 == null) {
-                    model.addAttribute("error", "Dates invalides.");
+                String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+                if (erreurPeriode != null) {
+                    model.addAttribute("error", erreurPeriode);
                 } else if (!hasTel) {
                     // Legacy afficherop(): telephone blank -> search by compte.
                     model.addAttribute("results", parseCompteAndSearch(numcompte, d1, d2, model));
@@ -120,8 +121,9 @@ public class OperationConsultationController {
         if (WebDateUtils.hasBoth(date1, date2) && codeOperation != null) {
             Date d1 = WebDateUtils.parse(date1);
             Date d2 = WebDateUtils.parseEnd(date2);
-            if (d1 == null || d2 == null) {
-                model.addAttribute("error", "Dates invalides.");
+            String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+            if (erreurPeriode != null) {
+                model.addAttribute("error", erreurPeriode);
             } else {
                 model.addAttribute("results", recuElectroniqueService.recupListop(d1, d2, codeOperation.toString()));
             }
@@ -149,8 +151,9 @@ public class OperationConsultationController {
             } else {
                 Date d1 = WebDateUtils.parse(date1);
                 Date d2 = WebDateUtils.parseEnd(date2);
-                if (d1 == null || d2 == null) {
-                    model.addAttribute("error", "Dates invalides.");
+                String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+                if (erreurPeriode != null) {
+                    model.addAttribute("error", erreurPeriode);
                 } else {
                     model.addAttribute("results",
                             recuElectroniqueService.recupListopByTelephone("228" + telephone.trim(), d1, d2));
@@ -176,8 +179,9 @@ public class OperationConsultationController {
             } else {
                 Date d1 = WebDateUtils.parse(date1);
                 Date d2 = WebDateUtils.parseEnd(date2);
-                if (d1 == null || d2 == null) {
-                    model.addAttribute("error", "Dates invalides.");
+                String erreurPeriode = WebDateUtils.erreurPeriode(d1, d2);
+                if (erreurPeriode != null) {
+                    model.addAttribute("error", erreurPeriode);
                 } else {
                     model.addAttribute("results", parseCompteAndSearch(numerocompte, d1, d2, model));
                 }
