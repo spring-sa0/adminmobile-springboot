@@ -1,5 +1,6 @@
 package com.laposte.adminmobile.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,9 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 /**
  * Port of the staging-table stored-procedure calls in admin.mobile.ctrl.EtatbeanCtrl that back
@@ -26,12 +30,12 @@ import java.util.List;
  *       verbatim as plain text - no Jasper report is involved for this one.</li>
  * </ul>
  *
- * <p><b>Inherited risk (not fixed by this port):</b> these procedures TRUNCATE-and-refill shared,
- * ungated staging tables, exactly as the legacy JSF app did (a {@code @SessionScoped} bean calling
- * stateful stored procs against global tables with no per-user/session column). Two admins running
- * an export at the same time can and will read each other's rows, or a race can leave a report
- * empty. A real fix requires changing the PL/SQL procedures/tables (e.g. keying them by session id)
- * and is out of scope for this Java-side port.
+ * <p><b>Tables de travail partagees :</b> ces procedures vident puis remplissent des tables
+ * globales, sans colonne d'utilisateur ou de session (heritage du legacy). Deux exports simultanes
+ * liraient les lignes l'un de l'autre. Chaque export doit donc executer "remplir + relire" dans
+ * {@link #enExclusivite} : un seul a la fois dans cette application. Limite : cela ne protege pas
+ * d'un autre programme appelant les memes procedures (ancienne application JSF encore en service,
+ * batch...) ; la vraie correction est cote PL/SQL (tables indexees par session).
  *
  * <p>Also note: the legacy methods (genafb120/proceduresolde/proceduresexcel) silently swallowed
  * {@code SQLException}. Here, {@link JdbcTemplate} lets it surface as an unchecked
@@ -41,10 +45,52 @@ import java.util.List;
 @Service
 public class ReleveExportService {
 
-    private final JdbcTemplate jdbcTemplate;
+    /** Attente maximale d'un export quand un autre est en cours. */
+    private static final long ATTENTE_SECONDES = 60;
 
+    private final JdbcTemplate jdbcTemplate;
+    private final long attenteSecondes;
+    /** Equitable : les exports en attente passent dans l'ordre d'arrivee. */
+    private final ReentrantLock verrouTablesDeTravail = new ReentrantLock(true);
+
+    @Autowired
     public ReleveExportService(JdbcTemplate jdbcTemplate) {
+        this(jdbcTemplate, ATTENTE_SECONDES);
+    }
+
+    ReleveExportService(JdbcTemplate jdbcTemplate, long attenteSecondes) {
         this.jdbcTemplate = jdbcTemplate;
+        this.attenteSecondes = attenteSecondes;
+    }
+
+    /**
+     * Execute un export complet (remplissage de la table de travail puis lecture) sans qu'un autre
+     * export ne puisse s'intercaler. Attend au plus {@value #ATTENTE_SECONDES} s qu'un export en
+     * cours se termine, sinon leve {@link ExportOccupeException}.
+     */
+    public <T> T enExclusivite(Supplier<T> export) {
+        boolean obtenu;
+        try {
+            obtenu = verrouTablesDeTravail.tryLock(attenteSecondes, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ExportOccupeException();
+        }
+        if (!obtenu) {
+            throw new ExportOccupeException();
+        }
+        try {
+            return export.get();
+        } finally {
+            verrouTablesDeTravail.unlock();
+        }
+    }
+
+    /** Un autre export de releve occupe les tables de travail depuis trop longtemps. */
+    public static class ExportOccupeException extends RuntimeException {
+        public ExportOccupeException() {
+            super("Un autre export de releve est en cours. Reessayez dans quelques instants.");
+        }
     }
 
     public void populateReleveClient1(String numeroCompte, LocalDate dateDebut, LocalDate dateFin) {

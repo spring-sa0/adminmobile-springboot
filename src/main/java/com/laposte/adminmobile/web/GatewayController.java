@@ -19,10 +19,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class GatewayController {
 
     private final RecuElectroniqueService recuElectroniqueService;
+    private final PaginationEnBase paginationEnBase;
 
     @Autowired
-    public GatewayController(RecuElectroniqueService recuElectroniqueService) {
+    public GatewayController(RecuElectroniqueService recuElectroniqueService, PaginationEnBase paginationEnBase) {
         this.recuElectroniqueService = recuElectroniqueService;
+        this.paginationEnBase = paginationEnBase;
     }
 
     @GetMapping("/gateway/liste")
@@ -40,7 +42,7 @@ public class GatewayController {
             if (erreurPeriode != null) {
                 model.addAttribute("error", erreurPeriode);
             } else {
-                model.addAttribute("results", recuElectroniqueService.recupListopParPeriodeEtOrigine(d1, d2, operateur));
+                model.addAttribute("results", paginationEnBase.charger(page -> recuElectroniqueService.recupListopParPeriodeEtOrigine(d1, d2, operateur, page), model));
             }
         }
         return "gateway/liste";

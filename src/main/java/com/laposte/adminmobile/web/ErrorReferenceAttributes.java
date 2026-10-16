@@ -27,7 +27,8 @@ public class ErrorReferenceAttributes extends DefaultErrorAttributes {
     public Map<String, Object> getErrorAttributes(WebRequest webRequest, ErrorAttributeOptions options) {
         Map<String, Object> attributes = super.getErrorAttributes(webRequest, options);
         Object status = attributes.get("status");
-        if (status instanceof Integer code && code >= 500) {
+        // 503 = surcharge passagere (ChargeFilter, deja journalisee) : pas une panne, pas de reference.
+        if (status instanceof Integer code && code >= 500 && code != 503) {
             String reference = HexFormat.of().withUpperCase().toHexDigits(ThreadLocalRandom.current().nextInt());
             attributes.put("reference", reference);
             Object path = webRequest.getAttribute("jakarta.servlet.error.request_uri", RequestAttributes.SCOPE_REQUEST);

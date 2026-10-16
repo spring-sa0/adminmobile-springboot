@@ -16,6 +16,12 @@ spring:
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:16}
       connection-timeout: 30000
+      # Le profil Oracle du compte technique coupe les sessions inactives depuis 30 min
+      # (IDLE_TIME = 30) : on renouvelle chaque connexion avant (25 min) et on garde les
+      # connexions inutilisees actives (test toutes les 5 min), pour ne jamais recevoir une
+      # connexion deja coupee par Oracle apres une periode calme (nuit, week-end).
+      max-lifetime: 1500000
+      keepalive-time: 300000
 
   jpa:
     open-in-view: false
@@ -59,9 +65,13 @@ server:
 
 app:
   security:
-    # Echecs de connexion avant blocage temporaire (voir security.LoginAttemptService)
-    max-login-attempts: ${MAX_LOGIN_ATTEMPTS:5}
-    max-login-attempts-per-ip: ${MAX_LOGIN_ATTEMPTS_PER_IP:20}
+    # Echecs de connexion avant blocage temporaire (voir security.LoginAttemptService).
+    # 2 par identifiant : le profil Oracle verrouille le compte au 3e echec (FAILED_LOGIN_ATTEMPTS
+    # = 3), souvent pour une journee ; l'application doit bloquer avant Oracle.
+    # 50 par adresse IP : les utilisateurs d'un meme site sortent souvent par une seule IP (NAT,
+    # proxy) ; trop bas, quelques fautes de frappe cumulees bloqueraient tout le site.
+    max-login-attempts: ${MAX_LOGIN_ATTEMPTS:2}
+    max-login-attempts-per-ip: ${MAX_LOGIN_ATTEMPTS_PER_IP:50}
     login-lock-duration: ${LOGIN_LOCK_DURATION:15m}
   reports:
     jasper-source-dir: classpath:reports/
@@ -74,6 +84,12 @@ app:
     # est invite a reduire la periode. Le PDF est plus bas : 5 000 lignes = environ 120 pages.
     max-lignes-excel: ${EXPORT_MAX_LIGNES_EXCEL:50000}
     max-lignes-pdf: ${EXPORT_MAX_LIGNES_PDF:5000}
+  charge:
+    # Traitements lourds (recherches sur une periode, exports) executes en meme temps, et attente
+    # maximale d'une place avant de repondre "service momentanement indisponible" (web.ChargeFilter).
+    # A garder sous la taille du pool Oracle (DB_POOL_SIZE) pour laisser des connexions aux ecrans legers.
+    traitements-lourds-simultanes: ${CHARGE_TRAITEMENTS_LOURDS:8}
+    attente-secondes: ${CHARGE_ATTENTE_SECONDES:20}
   logs:
     # Dossier des journaux adminmobile.log et audit.log (voir logback-spring.xml)
     dir: ${LOG_DIR:logs}

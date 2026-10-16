@@ -30,8 +30,8 @@ public class LoginAttemptService {
     private final Map<String, Attempts> attempts = new ConcurrentHashMap<>();
 
     public LoginAttemptService(
-            @Value("${app.security.max-login-attempts:5}") int maxAttemptsPerLogin,
-            @Value("${app.security.max-login-attempts-per-ip:20}") int maxAttemptsPerIp,
+            @Value("${app.security.max-login-attempts:2}") int maxAttemptsPerLogin,
+            @Value("${app.security.max-login-attempts-per-ip:50}") int maxAttemptsPerIp,
             @Value("${app.security.login-lock-duration:15m}") Duration lockDuration) {
         this.maxAttemptsPerLogin = maxAttemptsPerLogin;
         this.maxAttemptsPerIp = maxAttemptsPerIp;

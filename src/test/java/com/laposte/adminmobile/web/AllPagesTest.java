@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * database. Catches broken templates, unknown properties, missing routes and access-rule gaps.
  */
 @WebMvcTest
-@Import({SecurityConfig.class, ErrorReferenceAttributes.class, AllPagesTest.MockServices.class})
+@Import({SecurityConfig.class, ErrorReferenceAttributes.class, PaginationEnBase.class, AllPagesTest.MockServices.class})
 class AllPagesTest {
 
     private static final String P = "date1=2026-01-01&date2=2026-01-31";
@@ -63,6 +63,9 @@ class AllPagesTest {
 
     @Autowired
     private RecuElectroniqueService recuElectroniqueService;
+
+    @Autowired
+    private CashpowerService cashpowerService;
 
     @Autowired
     private SuggestionsService suggestionsService;
@@ -94,7 +97,7 @@ class AllPagesTest {
                 @Override
                 public void postProcessBeanFactory(org.springframework.beans.factory.config.ConfigurableListableBeanFactory f) {
                     List<Class<?>> types = List.of(
-                            ApplimobileService.class, BankToBankReportService.class, CommissionsReportService.class,
+                            ApplimobileService.class, BankToBankReportService.class, CashpowerService.class, CommissionsReportService.class,
                             CompteAppLierService.class, ComptesReportService.class, EposteFabricatedReportService.class,
                             FormatsService.class, FrequencesService.class, JasperReportService.class, MailService.class,
                             MarchandReportService.class, ModifCodesecretService.class, OperationService.class,
@@ -134,6 +137,8 @@ class AllPagesTest {
             "/comptes/lies", "/comptes/lies?telephone=90000000",
             "/annulation-op/annuler", "/annulation-op/annuler?numop=1",
             "/annulation-op/restaurer", "/annulation-op/restaurer?numop=1",
+            "/annulation-op/cashpower", "/annulation-op/cashpower?numop=1", "/annulation-op/cashpower?numop=abc",
+            "/annulation-op/annulees", "/annulation-op/annulees?" + P, "/annulation-op/annulees?type=CASHPOWER&" + P,
             "/etats/transactions/bank-to-wallet", "/etats/transactions/bank-to-wallet?operateur=TMoney&" + P,
             "/etats/transactions/wallet-to-bank", "/etats/transactions/wallet-to-bank?" + P,
             "/etats/transactions/bank-to-bank", "/etats/transactions/bank-to-bank?operateur=FLooz&" + P,
@@ -356,12 +361,15 @@ class AllPagesTest {
         for (long i = 1; i <= 250; i++) {
             ops.add(new com.laposte.adminmobile.entities.RecuElectronique(i));
         }
-        Mockito.when(recuElectroniqueService.recupListopParPeriode(any(), any())).thenReturn(ops);
+        Mockito.doAnswer(SampleDataAnswer.pageDe(ops)).when(recuElectroniqueService).recupListopParPeriode(any(), any(), any());
 
         MvcResult result = mvc.perform(get("/etats/transactions/ecoccp?" + P + "&page=3"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Lignes 201 a 250 sur 250")))
                 .andReturn();
+        // Pagination faite par la base : seule la page 3 (100 lignes a partir de la 201e) est demandee.
+        verify(recuElectroniqueService).recupListopParPeriode(any(), any(),
+                eq(org.springframework.data.domain.PageRequest.of(2, 100)));
         String html = result.getResponse().getContentAsString();
         // 50 lignes de donnees sur la derniere page, et les liens gardent les filtres de la recherche.
         assertThat(html.split("<td>2[0-5][0-9]</td>", -1).length - 1).isEqualTo(50);
@@ -403,7 +411,7 @@ class AllPagesTest {
             op.setMontant(1500L * i);
             ops.add(op);
         }
-        Mockito.when(recuElectroniqueService.recupListopParPeriode(any(), any())).thenReturn(ops);
+        Mockito.doAnswer(SampleDataAnswer.pageDe(ops)).when(recuElectroniqueService).recupListopParPeriode(any(), any(), any());
 
         MvcResult xlsx = mvc.perform(get("/etats/transactions/ecoccp?" + P + "&page=2&export=xlsx"))
                 .andExpect(status().isOk())
@@ -423,6 +431,10 @@ class AllPagesTest {
             assertThat(feuille.getRow(entete + 1).getCell(1).getStringCellValue()).isEqualTo("6310319794001000");
         }
 
+        // Export Excel : toute la liste, bornee au plafond + 1 ligne (pour detecter le depassement).
+        verify(recuElectroniqueService).recupListopParPeriode(any(), any(),
+                eq(org.springframework.data.domain.PageRequest.of(0, 50_001)));
+
         MvcResult pdf = mvc.perform(get("/etats/transactions/ecoccp?" + P + "&export=pdf"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/pdf"))
@@ -438,7 +450,7 @@ class AllPagesTest {
         for (long i = 1; i <= 5001; i++) {
             ops.add(new com.laposte.adminmobile.entities.RecuElectronique(i));
         }
-        Mockito.when(recuElectroniqueService.recupListopParPeriode(any(), any())).thenReturn(ops);
+        Mockito.doAnswer(SampleDataAnswer.pageDe(ops)).when(recuElectroniqueService).recupListopParPeriode(any(), any(), any());
 
         mvc.perform(get("/etats/transactions/ecoccp?" + P + "&export=pdf"))
                 .andExpect(status().isOk())
@@ -458,6 +470,83 @@ class AllPagesTest {
             entete.forEach(c -> colonnes.add(c.getStringCellValue()));
             assertThat(colonnes).containsExactly("Numero Compte", "Intitule Compte", "Mail", "Frequence", "Format");
         }
+    }
+
+    // ---- Annulation CashPower (portage de annul_op.fmb) ----------------------------------------
+
+    private static CashpowerService.OperationCashpower achatCashpower(long numero) {
+        return new CashpowerService.OperationCashpower(numero, "KOFFI AMA 01234567890", new java.math.BigDecimal("5000"),
+                new Date(), "22890123456", "6310319794001000", "01234567890", "SUCCESS", "R-1", "12.5");
+    }
+
+    @Test
+    @WithMockUser(username = "agent1", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void cashpowerOperationIsShownThenCancelledWithProcedureMessage() throws Exception {
+        Mockito.doReturn(List.of(achatCashpower(103527700L))).when(cashpowerService).rechercher(103527700L);
+        Mockito.doReturn(null).when(cashpowerService).annulationExistante(103527700L);
+        Mockito.doReturn(new CashpowerService.ResultatAnnulation(0, "OK - Annulation effectuee avec succes. Numero d'annulation : 103600001"))
+                .when(cashpowerService).annuler(103527700L, "agent1");
+
+        mvc.perform(get("/annulation-op/cashpower?numop=103527700"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("KOFFI AMA 01234567890")))
+                .andExpect(content().string(containsString("Annuler l'operation")));
+
+        mvc.perform(post("/annulation-op/cashpower/annuler").with(csrf()).param("numop", " 103527700 "))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/annulation-op/cashpower?numop=103527700"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", "0 - OK - Annulation effectuee avec succes. Numero d'annulation : 103600001"));
+        verify(cashpowerService).annuler(103527700L, "agent1");
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void procedureRefusalIsShownAsError() throws Exception {
+        Mockito.doReturn(List.of(achatCashpower(103527701L))).when(cashpowerService).rechercher(103527701L);
+        Mockito.doReturn(new CashpowerService.ResultatAnnulation(1, "NOK - Aucune ecriture trouvee pour l'operation 103527701"))
+                .when(cashpowerService).annuler(Mockito.eq(103527701L), any());
+
+        mvc.perform(post("/annulation-op/cashpower/annuler").with(csrf()).param("numop", "103527701"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", "1 - NOK - Aucune ecriture trouvee pour l'operation 103527701"));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void onlyCashpowerOperationsCanBeCancelled() throws Exception {
+        Mockito.doReturn(List.of()).when(cashpowerService).rechercher(999L);
+
+        mvc.perform(get("/annulation-op/cashpower?numop=999"))
+                .andExpect(content().string(containsString("Aucune operation CashPower trouvee")))
+                .andExpect(content().string(not(containsString("Annuler l'operation"))));
+        mvc.perform(post("/annulation-op/cashpower/annuler").with(csrf()).param("numop", "999"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("n'est pas une operation CashPower")));
+        mvc.perform(post("/annulation-op/cashpower/annuler").with(csrf()).param("numop", "12a"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("Numero d'operation invalide")));
+        verify(cashpowerService, never()).annuler(Mockito.eq(999L), any());
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void alreadyCancelledOperationHasNoCancelButton() throws Exception {
+        Mockito.doReturn(List.of(achatCashpower(103527702L))).when(cashpowerService).rechercher(103527702L);
+        Mockito.doReturn(103600002L).when(cashpowerService).annulationExistante(103527702L);
+
+        mvc.perform(get("/annulation-op/cashpower?numop=103527702"))
+                .andExpect(content().string(containsString("Cette operation est deja annulee. Numero d&#39;annulation : 103600002")))
+                .andExpect(content().string(not(containsString("Annuler l'operation"))));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_UTILISATEUR", "PROFIL_USER", "MARCHAND"})
+    void onlyAdministratorsCanCancelCashpowerOperations() throws Exception {
+        mvc.perform(get("/annulation-op/cashpower")).andExpect(status().isForbidden());
+        mvc.perform(post("/annulation-op/cashpower/annuler").with(csrf()).param("numop", "1"))
+                .andExpect(status().isForbidden());
+        verify(cashpowerService, never()).annuler(Mockito.eq(1L), any());
     }
 
     /** L'export suit les regles d'acces de la page : pas de fichier sans les droits sur l'ecran. */
@@ -487,7 +576,7 @@ class AllPagesTest {
                 assertThat(html).as(template.getFilename()).contains("fragments/export :: boutons");
             }
         }
-        assertThat(listes).isEqualTo(58);
+        assertThat(listes).isEqualTo(60);
     }
 
     @Test

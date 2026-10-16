@@ -54,10 +54,12 @@
         </details>
 
         <details sec:authorize="hasAuthority('PROFIL_MENU')">
-            <summary>Annulation Op EcoCCP</summary>
+            <summary>Annulation Operations</summary>
             <ul>
                 <li><a th:href="@{/annulation-op/annuler}">Annul Op EcoCCP</a></li>
                 <li><a th:href="@{/annulation-op/restaurer}">Restaurer Op</a></li>
+                <li><a th:href="@{/annulation-op/cashpower}">Annul Op CashPower</a></li>
+                <li><a th:href="@{/annulation-op/annulees}">Operations annulees</a></li>
             </ul>
         </details>
 
