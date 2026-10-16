@@ -9,7 +9,7 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.6.0 |
+| Version | 1.7.0 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
@@ -350,6 +350,15 @@ fusion.
    l'annulation n'est possible que pour une operation trouvee dans `SPT.CASHPOWER` (la procedure,
    elle, annulerait n'importe quelle operation de `SPT.MOUVEMENT`). Une operation deja annulee
    est signalee avant toute action et le bouton n'est pas propose.
+
+   `/annulation-op/annulees` liste, sur une periode, toutes les annulations passees par
+   `P_ANNULER_OPERATION` (formulaire `annul_op` ou ecran web), CashPower ou non, une ligne par
+   annulation : date, numero d'annulation, operation annulee, type, libelle, montant, agent,
+   nombre d'ecritures inverses. Filtre par type (toutes / CashPower / autres). Les annulations
+   d'annulations sont signalees. Les annulations EcoCCP (`ANNUL_OP_ECOCCP`) ont leur propre etat
+   (`/etats/transactions/ecoccp-annulees`). `SPT.MOUVEMENT` depasse 200 millions de lignes : la
+   recherche passe par l'index sur `DATE_MVT` ; compter ~5 s pour un trimestre (jusqu'a ~20 s au
+   premier acces).
 
 2. **Ecrans "Etats" reconstruits.** Plusieurs rapports legacy ("Etats", "Marchand",
    "Commissions", "Recap") n'existaient plus que sous forme de `.jasper` compiles sans leur SQL

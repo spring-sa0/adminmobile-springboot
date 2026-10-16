@@ -138,6 +138,7 @@ class AllPagesTest {
             "/annulation-op/annuler", "/annulation-op/annuler?numop=1",
             "/annulation-op/restaurer", "/annulation-op/restaurer?numop=1",
             "/annulation-op/cashpower", "/annulation-op/cashpower?numop=1", "/annulation-op/cashpower?numop=abc",
+            "/annulation-op/annulees", "/annulation-op/annulees?" + P, "/annulation-op/annulees?type=CASHPOWER&" + P,
             "/etats/transactions/bank-to-wallet", "/etats/transactions/bank-to-wallet?operateur=TMoney&" + P,
             "/etats/transactions/wallet-to-bank", "/etats/transactions/wallet-to-bank?" + P,
             "/etats/transactions/bank-to-bank", "/etats/transactions/bank-to-bank?operateur=FLooz&" + P,
@@ -575,7 +576,7 @@ class AllPagesTest {
                 assertThat(html).as(template.getFilename()).contains("fragments/export :: boutons");
             }
         }
-        assertThat(listes).isEqualTo(59);
+        assertThat(listes).isEqualTo(60);
     }
 
     @Test

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Operations annulees')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Liste des Operations Annulees</h2>
+    <!-- Annulations passees par PROCEDURES.P_ANNULER_OPERATION (formulaire annul_op ou ecran
+         Annul Op CashPower), une ligne par annulation. Les annulations EcoCCP ont leur propre
+         etat (Etats > EcoCCP annulees). Voir CashpowerService#annulations. -->
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/annulation-op/annulees}">
+        <div class="form-row">
+            <label for="date1">Date debut</label>
+            <input type="date" id="date1" name="date1" th:value="${date1}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="date2">Date fin</label>
+            <input type="date" id="date2" name="date2" th:value="${date2}" required="required"/>
+        </div>
+        <div class="form-row">
+            <label for="type">Type d'operation</label>
+            <select id="type" name="type">
+                <option value="TOUT" th:selected="${type == 'TOUT'}">Toutes</option>
+                <option value="CASHPOWER" th:selected="${type == 'CASHPOWER'}">CashPower</option>
+                <option value="AUTRE" th:selected="${type == 'AUTRE'}">Autres operations</option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null}">
+        <div th:replace="~{fragments/export :: boutons}"></div>
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Date annulation</th>
+                <th>Numero annulation</th>
+                <th>Operation annulee</th>
+                <th>Type</th>
+                <th>Libelle</th>
+                <th>Montant</th>
+                <th>Telephone</th>
+                <th>Annulee par</th>
+                <th>Ecritures inverses</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${#dates.format(item.dateAnnulation, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                <td th:text="${item.numeroAnnulation}"></td>
+                <td th:text="${item.numeroOperationAnnulee}"></td>
+                <td th:text="${item.type}"></td>
+                <td th:text="${item.libelle}"></td>
+                <td th:text="${item.montant}"></td>
+                <td th:text="${item.telephone}"></td>
+                <td th:text="${item.agent}"></td>
+                <td th:text="${item.nbEcritures}"></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(results)}">
+                <td colspan="9">Aucune operation annulee sur cette periode.</td>
+            </tr>
+            </tbody>
+        </table>
+        <nav th:replace="~{fragments/pagination :: pager}"></nav>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
