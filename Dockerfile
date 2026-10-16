@@ -29,8 +29,11 @@ VOLUME ["/app/logs"]
 
 EXPOSE 8080
 
-# Permet de passer des options JVM (ex. -Xmx512m) sans reconstruire l'image.
-ENV JAVA_OPTS=""
+# Memoire Java : 75 % de la RAM du conteneur (Java n'en prend que 25 % par defaut, trop peu pour
+# les gros etats et exports). En cas de saturation memoire, la JVM s'arrete net et Docker la
+# redemarre (restart: unless-stopped) au lieu de rester bloquee a moitie fonctionnelle.
+# JAVA_OPTS dans .env remplace entierement ces options (ex. -Xmx2g -XX:+ExitOnOutOfMemoryError).
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
 
 # Interroge /actuator/health, qui verifie aussi la connexion a la base : le conteneur passe
 # "unhealthy" si Oracle est injoignable, pas seulement si le port ne repond plus.

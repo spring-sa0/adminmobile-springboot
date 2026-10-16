@@ -10,6 +10,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
@@ -38,6 +40,7 @@ import java.util.Map;
  * l'export a ete refuse (liste trop longue), la reponse HTML est transmise telle quelle.
  */
 @Component
+@Order(Ordered.LOWEST_PRECEDENCE) // apres ChargeFilter : la construction du fichier compte dans la limite
 public class ExportFilter extends OncePerRequestFilter {
 
     private static final DateTimeFormatter HORODATAGE = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");

@@ -23,12 +23,15 @@ public class OperationConsultationController {
 
     private final RecuElectroniqueService recuElectroniqueService;
     private final OperationService operationService;
+    private final PaginationEnBase paginationEnBase;
 
     @Autowired
     public OperationConsultationController(RecuElectroniqueService recuElectroniqueService,
-                                            OperationService operationService) {
+                                            OperationService operationService,
+                                            PaginationEnBase paginationEnBase) {
         this.recuElectroniqueService = recuElectroniqueService;
         this.operationService = operationService;
+        this.paginationEnBase = paginationEnBase;
     }
 
     /** Port of consultaionop.xhtml / OpCtrl#afficherop(). */
@@ -125,7 +128,7 @@ public class OperationConsultationController {
             if (erreurPeriode != null) {
                 model.addAttribute("error", erreurPeriode);
             } else {
-                model.addAttribute("results", recuElectroniqueService.recupListop(d1, d2, codeOperation.toString()));
+                model.addAttribute("results", paginationEnBase.charger(page -> recuElectroniqueService.recupListop(d1, d2, codeOperation.toString(), page), model));
             }
         }
         return "operations/liste";

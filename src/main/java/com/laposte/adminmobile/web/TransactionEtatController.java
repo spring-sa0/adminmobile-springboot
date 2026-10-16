@@ -41,12 +41,15 @@ public class TransactionEtatController {
 
     private final RecuElectroniqueService recuElectroniqueService;
     private final BankToBankReportService bankToBankReportService;
+    private final PaginationEnBase paginationEnBase;
 
     @Autowired
     public TransactionEtatController(RecuElectroniqueService recuElectroniqueService,
-                                      BankToBankReportService bankToBankReportService) {
+                                      BankToBankReportService bankToBankReportService,
+                                      PaginationEnBase paginationEnBase) {
         this.recuElectroniqueService = recuElectroniqueService;
         this.bankToBankReportService = bankToBankReportService;
+        this.paginationEnBase = paginationEnBase;
     }
 
     @GetMapping("/bank-to-wallet")
@@ -106,7 +109,7 @@ public class TransactionEtatController {
             if (erreurPeriode != null) {
                 model.addAttribute("error", erreurPeriode);
             } else {
-                model.addAttribute("results", recuElectroniqueService.recupListopEposte(d1, d2));
+                model.addAttribute("results", paginationEnBase.charger(page -> recuElectroniqueService.recupListopEposte(d1, d2, page), model));
             }
         }
         return "etats/transactions/compte-a-compte";
@@ -144,7 +147,7 @@ public class TransactionEtatController {
             if (erreurPeriode != null) {
                 model.addAttribute("error", erreurPeriode);
             } else {
-                model.addAttribute("results", recuElectroniqueService.recupListopParPeriodeEtOrigine(d1, d2, operateur));
+                model.addAttribute("results", paginationEnBase.charger(page -> recuElectroniqueService.recupListopParPeriodeEtOrigine(d1, d2, operateur, page), model));
             }
         }
         return "etats/transactions/global";
@@ -164,7 +167,7 @@ public class TransactionEtatController {
             if (erreurPeriode != null) {
                 model.addAttribute("error", erreurPeriode);
             } else {
-                model.addAttribute("results", recuElectroniqueService.recupListopParPeriode(d1, d2));
+                model.addAttribute("results", paginationEnBase.charger(page -> recuElectroniqueService.recupListopParPeriode(d1, d2, page), model));
             }
         }
         return "etats/transactions/ecoccp";
@@ -184,7 +187,7 @@ public class TransactionEtatController {
             if (erreurPeriode != null) {
                 model.addAttribute("error", erreurPeriode);
             } else {
-                model.addAttribute("results", recuElectroniqueService.recupListopAnnulees(d1, d2));
+                model.addAttribute("results", paginationEnBase.charger(page -> recuElectroniqueService.recupListopAnnulees(d1, d2, page), model));
             }
         }
         return "etats/transactions/ecoccp-annulees";
@@ -201,7 +204,7 @@ public class TransactionEtatController {
             if (erreurPeriode != null) {
                 model.addAttribute("error", erreurPeriode);
             } else {
-                model.addAttribute("results", recuElectroniqueService.recupListopParPeriodeEtOrigine(d1, d2, operateur));
+                model.addAttribute("results", paginationEnBase.charger(page -> recuElectroniqueService.recupListopParPeriodeEtOrigine(d1, d2, operateur, page), model));
             }
         }
         return view;

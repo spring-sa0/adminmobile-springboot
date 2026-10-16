@@ -2,6 +2,9 @@ package com.laposte.adminmobile.web;
 
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -37,10 +40,32 @@ class SampleDataAnswer implements Answer<Object> {
             }
             return List.of();
         }
+        if (Page.class.isAssignableFrom(returnType)) {
+            // Recherches paginees en base : une ligne, sur la page demandee.
+            Type generic = invocation.getMethod().getGenericReturnType();
+            List<Object> contenu = generic instanceof ParameterizedType pt && pt.getActualTypeArguments()[0] instanceof Class<?> element
+                    ? List.of(sample(element, 0)) : List.of();
+            Pageable page = invocation.getArguments().length > 0
+                    && invocation.getArguments()[invocation.getArguments().length - 1] instanceof Pageable p ? p : Pageable.unpaged();
+            return new PageImpl<>(contenu, page, contenu.size());
+        }
         if (returnType == byte[].class) {
             return new byte[0];
         }
         return sample(returnType, 0);
+    }
+
+    /** Simule une requete paginee en base sur {@code lignes} : renvoie la tranche demandee. */
+    static <T> Answer<Page<T>> pageDe(List<T> lignes) {
+        return invocation -> {
+            Pageable page = invocation.getArgument(invocation.getArguments().length - 1);
+            if (page == null || page.isUnpaged()) {
+                return new PageImpl<>(lignes);
+            }
+            int debut = (int) Math.min(page.getOffset(), lignes.size());
+            int fin = (int) Math.min(page.getOffset() + page.getPageSize(), lignes.size());
+            return new PageImpl<>(lignes.subList(debut, fin), page, lignes.size());
+        };
     }
 
     static Object sample(Class<?> type, int depth) {

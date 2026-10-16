@@ -4,6 +4,8 @@ import com.laposte.adminmobile.entities.RecuElectronique;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -91,6 +93,29 @@ public interface RecuElectroniqueRepository extends JpaRepository<RecuElectroniq
             // r.telephone porte l'indicatif 228, u.telephone non (voir UsersRepository).
             + "AND r.telephone IN (SELECT CONCAT('228', u.telephone) FROM Users u) ORDER BY r.dateOperation DESC")
     List<RecuElectronique> findEposteScopedOperationsBetween(@Param("date1") Date date1, @Param("date2") Date date2);
+
+    // ---- Variantes paginees des recherches sur toute une periode -------------------------------
+    // Ces etats portent sur toutes les operations de la periode (jusqu'a ~100 000 lignes sur
+    // 92 jours) : la base ne renvoie que la page demandee, plus un comptage pour la pagination.
+    // Memes filtres et meme tri que les variantes List ci-dessus.
+
+    Page<RecuElectronique> findByDateOperationBetweenOrderByDateOperationDesc(Date date1, Date date2, Pageable page);
+
+    Page<RecuElectronique> findByDateOperationBetweenAndOrigineOrderByDateOperationDesc(
+            Date date1, Date date2, String origine, Pageable page);
+
+    Page<RecuElectronique> findByAncienNumOpIsNotNullAndDateOperationBetweenOrderByDateOperationDesc(
+            Date date1, Date date2, Pageable page);
+
+    Page<RecuElectronique> findByDateOperationBetweenAndCodeOperationOrderByDateOperationDesc(
+            Date date1, Date date2, BigInteger codeOperation, Pageable page);
+
+    @Query(value = "SELECT r FROM RecuElectronique r WHERE r.dateOperation BETWEEN :date1 AND :date2 "
+            + "AND r.telephone IN (SELECT CONCAT('228', u.telephone) FROM Users u) ORDER BY r.dateOperation DESC",
+            countQuery = "SELECT COUNT(r) FROM RecuElectronique r WHERE r.dateOperation BETWEEN :date1 AND :date2 "
+                    + "AND r.telephone IN (SELECT CONCAT('228', u.telephone) FROM Users u)")
+    Page<RecuElectronique> findEposteScopedOperationsBetween(@Param("date1") Date date1, @Param("date2") Date date2,
+                                                             Pageable page);
 
     /**
      * Port of {@code recupNomprenomcom(numcompte)}: a lookup against {@code spt.compte} /

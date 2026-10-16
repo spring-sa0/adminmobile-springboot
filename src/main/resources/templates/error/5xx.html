@@ -14,7 +14,11 @@
         </div>
         <p class="err-code" th:text="${status} ?: 500">500</p>
         <h1 class="err-title" th:text="${status == 503} ? 'Service momentanement indisponible' : 'Une erreur est survenue'">Une erreur est survenue</h1>
-        <p class="err-text">
+        <p class="err-text" th:if="${status == 503}">
+            Beaucoup de recherches et d'exports sont en cours en ce moment. Patientez quelques
+            instants puis relancez votre recherche.
+        </p>
+        <p class="err-text" th:unless="${status == 503}">
             L'operation n'a pas pu aboutir suite a un probleme technique. Avant de recommencer
             une operation sensible (annulation, parametrage...), verifiez qu'elle n'a pas deja
             ete prise en compte.

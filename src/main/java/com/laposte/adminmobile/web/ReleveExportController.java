@@ -89,14 +89,19 @@ public class ReleveExportController {
         if (invalid != null) {
             return invalid;
         }
-        releveExportService.populateReleveClient1(form.getNumerocompte(), form.getDatedebut(), form.getDatefin());
-
-        Map<String, Object> params = new HashMap<>();
-        params.put("numcompte", form.getNumerocompte());
-        JasperPrint jasperPrint = jasperReportService.fillFromQuery("releve_client1", params);
-        byte[] bytes = jasperReportService.toXls(jasperPrint);
-
-        return excelResponse(bytes, "releve_client1.xls");
+        try {
+            // Remplissage + lecture de la table de travail partagee sans qu'un autre export s'intercale.
+            byte[] bytes = releveExportService.enExclusivite(() -> {
+                releveExportService.populateReleveClient1(form.getNumerocompte(), form.getDatedebut(), form.getDatefin());
+                Map<String, Object> params = new HashMap<>();
+                params.put("numcompte", form.getNumerocompte());
+                JasperPrint jasperPrint = jasperReportService.fillFromQuery("releve_client1", params);
+                return jasperReportService.toXls(jasperPrint);
+            });
+            return excelResponse(bytes, "releve_client1.xls");
+        } catch (ReleveExportService.ExportOccupeException e) {
+            return occupe(e, "/releves/excel-afb120", redirectAttributes);
+        }
     }
 
     /** Not a Jasper report: replicates EtatbeanCtrl.FichierAFB() - populate then dump IMOBILE.MODELEAFB as flat text. */
@@ -106,8 +111,15 @@ public class ReleveExportController {
         if (invalid != null) {
             return invalid;
         }
-        releveExportService.populateAfb120(form.getNumerocompte(), form.getDatedebut(), form.getDatefin());
-        List<String> lines = releveExportService.fetchAfb120Lines();
+        List<String> lines;
+        try {
+            lines = releveExportService.enExclusivite(() -> {
+                releveExportService.populateAfb120(form.getNumerocompte(), form.getDatedebut(), form.getDatefin());
+                return releveExportService.fetchAfb120Lines();
+            });
+        } catch (ReleveExportService.ExportOccupeException e) {
+            return occupe(e, "/releves/excel-afb120", redirectAttributes);
+        }
         String content = String.join(System.lineSeparator(), lines);
         byte[] bytes = content.getBytes(StandardCharsets.ISO_8859_1);
 
@@ -134,14 +146,25 @@ public class ReleveExportController {
         if (invalid != null) {
             return invalid;
         }
-        releveExportService.populateReleveSolde(form.getNumerocompte(), form.getDatedebut(), form.getDatefin());
+        try {
+            byte[] bytes = releveExportService.enExclusivite(() -> {
+                releveExportService.populateReleveSolde(form.getNumerocompte(), form.getDatedebut(), form.getDatefin());
+                Map<String, Object> params = new HashMap<>();
+                params.put("numcompte", form.getNumerocompte());
+                JasperPrint jasperPrint = jasperReportService.fillFromQuery("releve_solde", params);
+                return jasperReportService.toXls(jasperPrint);
+            });
+            return excelResponse(bytes, "releve_solde.xls");
+        } catch (ReleveExportService.ExportOccupeException e) {
+            return occupe(e, "/releves/excel-togocel", redirectAttributes);
+        }
+    }
 
-        Map<String, Object> params = new HashMap<>();
-        params.put("numcompte", form.getNumerocompte());
-        JasperPrint jasperPrint = jasperReportService.fillFromQuery("releve_solde", params);
-        byte[] bytes = jasperReportService.toXls(jasperPrint);
-
-        return excelResponse(bytes, "releve_solde.xls");
+    /** Un autre export de releve occupe les tables de travail : retour au formulaire avec un message. */
+    private static String occupe(ReleveExportService.ExportOccupeException e, String formUrl,
+                                 RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("error", e.getMessage());
+        return "redirect:" + formUrl;
     }
 
     // ---------- Shared "intitule" lookup, ported from EtatbeanCtrl.intitulecompte() (p:ajax on numcpt change) ----------

@@ -9,7 +9,7 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.4.0 |
+| Version | 1.5.0 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
@@ -65,14 +65,17 @@ ou via `env_file` en Docker. **Aucun identifiant ne doit etre ecrit dans le code
 | `THYMELEAF_CACHE` | non | `true` | Mettre `false` en developpement pour recharger les templates |
 | `SHOW_SQL` | non | `false` | Journalise le SQL Hibernate (developpement uniquement) |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | pour les mails | `localhost:25` | Serveur SMTP (notifications reclamations/suggestions) |
-| `MAX_LOGIN_ATTEMPTS` | non | `5` | Echecs de connexion avant blocage d'un identifiant |
-| `MAX_LOGIN_ATTEMPTS_PER_IP` | non | `20` | Echecs de connexion avant blocage d'une adresse IP |
+| `MAX_LOGIN_ATTEMPTS` | non | `2` | Echecs de connexion avant blocage d'un identifiant (rester sous le `FAILED_LOGIN_ATTEMPTS` du profil Oracle, 3) |
+| `MAX_LOGIN_ATTEMPTS_PER_IP` | non | `50` | Echecs de connexion avant blocage d'une adresse IP |
 | `LOGIN_LOCK_DURATION` | non | `15m` | Duree du blocage |
 | `RECHERCHE_PERIODE_MAX_JOURS` | non | `92` | Duree maximale d'une periode de recherche |
 | `RECHERCHE_TAILLE_PAGE` | non | `100` | Lignes par page dans les listes de resultats |
 | `LOG_DIR` | non | `logs` (`/app/logs` en Docker) | Dossier des journaux |
 | `EXPORT_MAX_LIGNES_EXCEL` | non | `50000` | Lignes maximum par export Excel d'une liste |
 | `EXPORT_MAX_LIGNES_PDF` | non | `5000` | Lignes maximum par export PDF d'une liste |
+| `CHARGE_TRAITEMENTS_LOURDS` | non | `8` | Recherches sur periode / exports executes en meme temps (rester sous `DB_POOL_SIZE`) |
+| `CHARGE_ATTENTE_SECONDES` | non | `20` | Attente d'une place avant la page « service momentanement indisponible » |
+| `JAVA_OPTS` | non | `-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError` | Options de la JVM (Docker) |
 
 ## Deploiement (Docker)
 
@@ -132,7 +135,33 @@ git pull
 docker compose up -d --build
 ```
 
-Options JVM (memoire...) : variable `JAVA_OPTS`, ex. `JAVA_OPTS=-Xmx512m`.
+Memoire Java : par defaut 75 % de la RAM du conteneur (`-XX:MaxRAMPercentage=75`), et arret
+net en cas de saturation pour que Docker redemarre l'application. Pour forcer une valeur,
+definir `JAVA_OPTS` dans `.env` (remplace les options par defaut), ex.
+`JAVA_OPTS=-Xmx3g -XX:+ExitOnOutOfMemoryError`. Prevoir au moins 2 Go pour l'application.
+
+### Montee en charge
+
+Mesures sur la base reelle (octobre 2026) : environ 1 000 operations par jour, ~100 000 sur la
+periode de recherche maximale (92 jours).
+
+| Protection | Effet | Reglage |
+|---|---|---|
+| Pagination faite par la base pour les etats sur toutes les operations d'une periode (`web/PaginationEnBase`) | une page = ~0,7 s et 100 lignes en memoire, au lieu de 8 s et ~100 000 lignes | `RECHERCHE_TAILLE_PAGE` |
+| Limite des traitements lourds simultanes (recherches sur periode, exports - `web/ChargeFilter`) | au-dela, attente puis page « service momentanement indisponible » au lieu d'une saturation memoire | `CHARGE_TRAITEMENTS_LOURDS` (8), `CHARGE_ATTENTE_SECONDES` (20) |
+| Exports de releves executes un par un (`ReleveExportService#enExclusivite`) | plus de lignes melangees entre deux exports simultanes | - |
+| Connexions Oracle renouvelees avant l'`IDLE_TIME` (30 min) du profil | pas d'erreur apres une periode calme | `max-lifetime`, `keepalive-time` |
+| Blocage a 2 echecs de connexion, 50 par IP | l'application bloque avant le verrouillage Oracle (3 echecs) | `MAX_LOGIN_ATTEMPTS`, `MAX_LOGIN_ATTEMPTS_PER_IP` |
+
+Limites connues :
+- **une seule instance** : sessions et compteurs de tentatives sont en memoire. Plusieurs
+  instances demanderaient une session partagee (Spring Session) et un repartiteur de charge.
+- chaque connexion a l'interface ouvre une session Oracle dediee (authentification par compte
+  Oracle) ; environ 1 200 sessions etaient libres sur l'instance lors de la mesure.
+- le verrou des exports de releves ne protege pas d'un autre programme (ancienne application,
+  batch) appelant les memes procedures.
+- aucun test de charge n'a encore ete fait : a realiser sur une base de **recette** avant une
+  ouverture large.
 
 ### HTTPS
 
@@ -173,10 +202,14 @@ Regles communes a tous les ecrans de liste, sans code specifique dans chaque con
 - **Periode limitee** a 92 jours (`RECHERCHE_PERIODE_MAX_JOURS`) : les operations augmentent
   d'environ 1 000 lignes par jour, une recherche sur plusieurs annees chargerait des centaines
   de milliers de lignes. Controle dans `WebDateUtils.erreurPeriode`.
-- **Pagination** a 100 lignes (`RECHERCHE_TAILLE_PAGE`) de toute liste exposee sous le nom
-  `results` (`web/PaginationInterceptor.java`, barre `fragments/pagination.html` a inclure
-  apres le tableau). La pagination se fait a l'affichage : c'est la limite de periode qui borne
-  le volume lu en base.
+- **Pagination** a 100 lignes (`RECHERCHE_TAILLE_PAGE`), barre `fragments/pagination.html` a
+  inclure apres le tableau :
+  - **faite par la base** pour les etats portant sur toutes les operations d'une periode
+    (`web/PaginationEnBase.java`) : seule la page affichee est lue. A utiliser pour toute
+    nouvelle recherche volumineuse :
+    `model.addAttribute("results", paginationEnBase.charger(page -> service.recherche(..., page), model))` ;
+  - **a l'affichage** pour les autres listes, plus petites (`web/PaginationInterceptor.java`,
+    applique automatiquement a toute liste exposee sous le nom `results`).
 - **Telephones et numeros de compte** : mis en forme automatiquement (`+228 90 12 34 56`,
   `22890123456` -> `90123456` ; espaces retires des comptes) par
   `web/SaisieNormalisationFilter.java`, puis une recherche avec une valeur invalide est
@@ -206,8 +239,9 @@ entre ces tables doit ajouter `228` cote comptes.
 
 Mesures en place (version 1.1.0) :
 
-- **Blocage des tentatives de connexion** : apres 5 echecs pour un identifiant ou 20 pour une
-  IP, blocage de 15 minutes, verifie *avant* tout appel a Oracle
+- **Blocage des tentatives de connexion** : apres 2 echecs pour un identifiant (le profil
+  Oracle verrouille le compte au 3e) ou 50 pour une IP (plusieurs utilisateurs peuvent partager
+  une IP de sortie), blocage de 15 minutes, verifie *avant* tout appel a Oracle
   (`security/LoginAttemptService.java`). Cela evite le brute force et le verrouillage des
   comptes Oracle par le profil de la base. Le compteur est en memoire : il repart a zero au
   redemarrage et n'est pas partage entre plusieurs instances.
@@ -332,11 +366,13 @@ fusion.
    `MARCHAND` (comme dans le legacy) et peuvent donc parametrer, activer et desactiver des
    marchands, y compris le profil Consultation. A restreindre si ce n'est pas voulu.
 
-7. **Exports de releves simultanes.** Les procedures `IMOBILE.procedure_solde_tgcel`,
+7. **Exports de releves (tables de travail partagees).** Les procedures `IMOBILE.procedure_solde_tgcel`,
    `procedure_solde_tgcel2` et `gen_afb` vident puis remplissent des tables de travail
-   partagees, que l'etat Jasper relit ensuite. Si deux utilisateurs exportent en meme temps,
-   l'un peut recuperer les lignes de l'autre (ou un fichier vide). La correction passe par les
-   procedures PL/SQL (tables indexees par session, par exemple) ; voir
+   partagees, que l'etat Jasper relit ensuite. Depuis la 1.5.0, l'application execute ces
+   exports un par un (les suivants attendent jusqu'a 60 s, puis un message invite a reessayer) :
+   deux utilisateurs ne peuvent plus recuperer les lignes l'un de l'autre. Ce verrou ne protege
+   pas d'un autre programme appelant les memes procedures (ancienne application, batch) ; la
+   correction complete passe par le PL/SQL (tables indexees par session). Voir
    `ReleveExportService.java`.
 
 8. **Authentification par comptes Oracle.** Fidele au legacy mais fortement couplee a la

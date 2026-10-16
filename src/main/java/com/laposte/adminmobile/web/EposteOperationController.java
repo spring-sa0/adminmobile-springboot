@@ -30,11 +30,14 @@ public class EposteOperationController {
 
     private final RecuElectroniqueService recuElectroniqueService;
     private final UsersService usersService;
+    private final PaginationEnBase paginationEnBase;
 
     @Autowired
-    public EposteOperationController(RecuElectroniqueService recuElectroniqueService, UsersService usersService) {
+    public EposteOperationController(RecuElectroniqueService recuElectroniqueService, UsersService usersService,
+                                     PaginationEnBase paginationEnBase) {
         this.recuElectroniqueService = recuElectroniqueService;
         this.usersService = usersService;
+        this.paginationEnBase = paginationEnBase;
     }
 
     /** Port of opeposteclt.xhtml. */
@@ -149,7 +152,7 @@ public class EposteOperationController {
             if (erreurPeriode != null) {
                 model.addAttribute("error", erreurPeriode);
             } else {
-                model.addAttribute("results", recuElectroniqueService.recupListopEposte(d1, d2));
+                model.addAttribute("results", paginationEnBase.charger(page -> recuElectroniqueService.recupListopEposte(d1, d2, page), model));
             }
         }
         return "eposte/operations";

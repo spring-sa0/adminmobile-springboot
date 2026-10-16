@@ -10,6 +10,8 @@ import java.math.BigInteger;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -110,9 +112,9 @@ public class RecuElectroniqueService {
      * is kept as a String to match the legacy signature and parsed to the entity's
      * {@link BigInteger} codeOperation field.
      */
-    public List<RecuElectronique> recupListop(Date date1, Date date2, String codeop) {
+    public Page<RecuElectronique> recupListop(Date date1, Date date2, String codeop, Pageable page) {
         return recuElectroniqueRepository.findByDateOperationBetweenAndCodeOperationOrderByDateOperationDesc(
-                startOfDay(date1), endOfDay(date2), new BigInteger(codeop));
+                startOfDay(date1), endOfDay(date2), new BigInteger(codeop), page);
     }
 
     /** Port of {@code recupop(numerop)} - equivalent to {@link #listopBynumeroOperation}, ordered. */
@@ -124,30 +126,34 @@ public class RecuElectroniqueService {
         return recuElectroniqueRepository.recupNomprenomcom(numcompte);
     }
 
+    // Recherches sur toute une periode : paginees en base (jusqu'a ~100 000 lignes sur 92 jours).
+    // La page est fournie par web.PaginationEnBase (page affichee, ou toute la liste jusqu'au
+    // plafond pour un export).
+
     /** Every EcoCCP transaction receipt in a date range - see repository-level notes. */
-    public List<RecuElectronique> recupListopParPeriode(Date date1, Date date2) {
+    public Page<RecuElectronique> recupListopParPeriode(Date date1, Date date2, Pageable page) {
         return recuElectroniqueRepository.findByDateOperationBetweenOrderByDateOperationDesc(
-                startOfDay(date1), endOfDay(date2));
+                startOfDay(date1), endOfDay(date2), page);
     }
 
     /** Same as above, filtered by {@code origine} (operator) when provided. */
-    public List<RecuElectronique> recupListopParPeriodeEtOrigine(Date date1, Date date2, String origine) {
+    public Page<RecuElectronique> recupListopParPeriodeEtOrigine(Date date1, Date date2, String origine, Pageable page) {
         if (origine == null || origine.isBlank()) {
-            return recupListopParPeriode(date1, date2);
+            return recupListopParPeriode(date1, date2, page);
         }
         return recuElectroniqueRepository.findByDateOperationBetweenAndOrigineOrderByDateOperationDesc(
-                startOfDay(date1), endOfDay(date2), origine);
+                startOfDay(date1), endOfDay(date2), origine, page);
     }
 
     /** Cancelled EcoCCP operations in a date range - see repository-level notes. */
-    public List<RecuElectronique> recupListopAnnulees(Date date1, Date date2) {
+    public Page<RecuElectronique> recupListopAnnulees(Date date1, Date date2, Pageable page) {
         return recuElectroniqueRepository.findByAncienNumOpIsNotNullAndDateOperationBetweenOrderByDateOperationDesc(
-                startOfDay(date1), endOfDay(date2));
+                startOfDay(date1), endOfDay(date2), page);
     }
 
     /** Best-faith "Eposte operations" scoping - see repository-level notes. */
-    public List<RecuElectronique> recupListopEposte(Date date1, Date date2) {
-        return recuElectroniqueRepository.findEposteScopedOperationsBetween(startOfDay(date1), endOfDay(date2));
+    public Page<RecuElectronique> recupListopEposte(Date date1, Date date2, Pageable page) {
+        return recuElectroniqueRepository.findEposteScopedOperationsBetween(startOfDay(date1), endOfDay(date2), page);
     }
 
     /**

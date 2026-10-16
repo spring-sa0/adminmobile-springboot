@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * database. Catches broken templates, unknown properties, missing routes and access-rule gaps.
  */
 @WebMvcTest
-@Import({SecurityConfig.class, ErrorReferenceAttributes.class, AllPagesTest.MockServices.class})
+@Import({SecurityConfig.class, ErrorReferenceAttributes.class, PaginationEnBase.class, AllPagesTest.MockServices.class})
 class AllPagesTest {
 
     private static final String P = "date1=2026-01-01&date2=2026-01-31";
@@ -356,12 +356,15 @@ class AllPagesTest {
         for (long i = 1; i <= 250; i++) {
             ops.add(new com.laposte.adminmobile.entities.RecuElectronique(i));
         }
-        Mockito.when(recuElectroniqueService.recupListopParPeriode(any(), any())).thenReturn(ops);
+        Mockito.doAnswer(SampleDataAnswer.pageDe(ops)).when(recuElectroniqueService).recupListopParPeriode(any(), any(), any());
 
         MvcResult result = mvc.perform(get("/etats/transactions/ecoccp?" + P + "&page=3"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Lignes 201 a 250 sur 250")))
                 .andReturn();
+        // Pagination faite par la base : seule la page 3 (100 lignes a partir de la 201e) est demandee.
+        verify(recuElectroniqueService).recupListopParPeriode(any(), any(),
+                eq(org.springframework.data.domain.PageRequest.of(2, 100)));
         String html = result.getResponse().getContentAsString();
         // 50 lignes de donnees sur la derniere page, et les liens gardent les filtres de la recherche.
         assertThat(html.split("<td>2[0-5][0-9]</td>", -1).length - 1).isEqualTo(50);
@@ -403,7 +406,7 @@ class AllPagesTest {
             op.setMontant(1500L * i);
             ops.add(op);
         }
-        Mockito.when(recuElectroniqueService.recupListopParPeriode(any(), any())).thenReturn(ops);
+        Mockito.doAnswer(SampleDataAnswer.pageDe(ops)).when(recuElectroniqueService).recupListopParPeriode(any(), any(), any());
 
         MvcResult xlsx = mvc.perform(get("/etats/transactions/ecoccp?" + P + "&page=2&export=xlsx"))
                 .andExpect(status().isOk())
@@ -423,6 +426,10 @@ class AllPagesTest {
             assertThat(feuille.getRow(entete + 1).getCell(1).getStringCellValue()).isEqualTo("6310319794001000");
         }
 
+        // Export Excel : toute la liste, bornee au plafond + 1 ligne (pour detecter le depassement).
+        verify(recuElectroniqueService).recupListopParPeriode(any(), any(),
+                eq(org.springframework.data.domain.PageRequest.of(0, 50_001)));
+
         MvcResult pdf = mvc.perform(get("/etats/transactions/ecoccp?" + P + "&export=pdf"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/pdf"))
@@ -438,7 +445,7 @@ class AllPagesTest {
         for (long i = 1; i <= 5001; i++) {
             ops.add(new com.laposte.adminmobile.entities.RecuElectronique(i));
         }
-        Mockito.when(recuElectroniqueService.recupListopParPeriode(any(), any())).thenReturn(ops);
+        Mockito.doAnswer(SampleDataAnswer.pageDe(ops)).when(recuElectroniqueService).recupListopParPeriode(any(), any(), any());
 
         mvc.perform(get("/etats/transactions/ecoccp?" + P + "&export=pdf"))
                 .andExpect(status().isOk())
