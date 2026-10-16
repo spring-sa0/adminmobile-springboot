@@ -9,7 +9,7 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.5.0 |
+| Version | 1.6.0 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
@@ -186,7 +186,7 @@ la connexion.
 
 | Profil (`CODE_PROFIL`) | Role | Acces |
 |---|---|---|
-| 1 | Administrateur | Tout, dont Parametres, Annulation d'operations, Gateway, Types de reclamation |
+| 1 | Administrateur | Tout, dont Parametres, Annulation d'operations (EcoCCP, CashPower), Gateway, Types de reclamation |
 | 2 | Utilisateur | Reclamations, suggestions, consultations, operations, comptes, etats, e-poste, commissions, marchand |
 | 3 | Consultation | Releves, marchand |
 | 9 | Marchand | Marchand uniquement |
@@ -303,7 +303,9 @@ src/main/resources/
 
 Procedures stockees appelees : `PROCEDURES.ANNUL_OP_ECOCCP(numop, utilisateur)` et
 `PROCEDURES.RESTAURER_OP_ECOCCP(numop, utilisateur)` (annulation / restauration
-d'operations), plus les procedures de preparation des releves (`ReleveExportService`).
+d'operations EcoCCP), `PROCEDURES.P_ANNULER_OPERATION(numop, utilisateur, code OUT, message OUT)`
+(annulation d'operations CashPower, `CashpowerService`), plus les procedures de preparation
+des releves (`ReleveExportService`).
 Les SMS sont envoyes en inserant dans `IMOBILE.INFO_SMS`, lue par la passerelle SMS.
 
 ## Tests et integration continue
@@ -339,6 +341,15 @@ fusion.
    deplace l'operation dans `SPT.RECU_ELECTRONIQUE_ANNULE` et envoie un SMS au client. Ne pas
    tester cet ecran sur la production avec une operation qu'on ne veut pas annuler. La
    procedure n'enregistre aucun motif d'annulation.
+
+   `/annulation-op/cashpower` (portage du formulaire Oracle Forms `annul_op.fmb`) recherche
+   l'achat dans `SPT.CASHPOWER` puis appelle `PROCEDURES.P_ANNULER_OPERATION`, qui passe les
+   ecritures inverses dans `SPT.MOUVEMENT` (libelle "ANNULATION OP n") et fait son propre
+   COMMIT. Codes retour affiches tels quels : `0` OK (avec le numero d'annulation), `1` aucune
+   ecriture, `2` deja annulee, `-1` erreur technique. Ecart volontaire avec le formulaire :
+   l'annulation n'est possible que pour une operation trouvee dans `SPT.CASHPOWER` (la procedure,
+   elle, annulerait n'importe quelle operation de `SPT.MOUVEMENT`). Une operation deja annulee
+   est signalee avant toute action et le bouton n'est pas propose.
 
 2. **Ecrans "Etats" reconstruits.** Plusieurs rapports legacy ("Etats", "Marchand",
    "Commissions", "Recap") n'existaient plus que sous forme de `.jasper` compiles sans leur SQL

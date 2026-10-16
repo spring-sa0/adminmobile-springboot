@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Annulation Operation CashPower')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Annulation des Operations CashPower</h2>
+    <!-- Portage du formulaire Oracle Forms annul_op.fmb ("ANNULATION DES OPERATIONS") :
+         recherche dans SPT.CASHPOWER puis PROCEDURES.P_ANNULER_OPERATION (voir CashpowerService). -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/annulation-op/cashpower}">
+        <div class="form-row">
+            <label for="numop">Numero operation</label>
+            <input type="text" id="numop" name="numop" th:value="${numop}" required="required"
+                   inputmode="numeric" autocomplete="off"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto" th:if="${results != null and !#lists.isEmpty(results)}">
+        <div class="alert-error" th:if="${#lists.size(results) > 1}"
+             th:text="|Attention : ${#lists.size(results)} achats CashPower portent ce numero d'operation. L'annulation porte sur toutes les ecritures de l'operation.|"></div>
+
+        <div th:replace="~{fragments/export :: boutons}"></div>
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Numero operation</th>
+                <th>Libelle operation</th>
+                <th>Montant operation</th>
+                <th>Date operation</th>
+                <th>Telephone</th>
+                <th>Compte</th>
+                <th>Kilowatt</th>
+                <th>Numero recu</th>
+                <th>Statut</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${results}">
+                <td th:text="${item.numeroOperation}"></td>
+                <td th:text="${item.libelle}"></td>
+                <td th:text="${item.montant}"></td>
+                <td th:text="${item.dateAchat != null ? #dates.format(item.dateAchat, 'dd/MM/yyyy HH:mm:ss') : ''}"></td>
+                <td th:text="${item.telephone}"></td>
+                <td th:text="${item.numeroCompte}"></td>
+                <td th:text="${item.kilowatt}"></td>
+                <td th:text="${item.numeroRecu}"></td>
+                <td th:text="${item.statut}"></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="alert-error" style="margin-top:16px" th:if="${annulationExistante != null}"
+             th:text="|Cette operation est deja annulee. Numero d'annulation : ${annulationExistante}|"></div>
+
+        <form method="post" th:action="@{/annulation-op/cashpower/annuler}" style="margin-top:16px"
+              th:if="${annulationExistante == null}"
+              onsubmit="return confirm('Etes-vous sur(e) de vouloir annuler cette operation ? Les ecritures inverses seront passees en comptabilite.');">
+            <input type="hidden" name="numop" th:value="${numop}"/>
+            <div class="form-actions">
+                <button type="submit">Annuler l'operation</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
