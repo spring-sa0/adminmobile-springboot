@@ -37,10 +37,21 @@ spring:
     cache: ${THYMELEAF_CACHE:true}
 
   mail:
-    host: ${MAIL_HOST:localhost}
-    port: ${MAIL_PORT:25}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    # Serveur SMTP. Vide : aucun e-mail ne peut partir (notifications, alertes de supervision).
+    host: ${MAIL_HOST:webmail.laposte.tg}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: ${MAIL_AUTH:true}
+      # Port 587 (soumission) : le serveur exige une connexion chiffree avant l'envoi
+      # ("530 Must issue a STARTTLS command first" sinon). MAIL_STARTTLS=false pour un relais sans TLS.
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      # Delais (ms) : un serveur SMTP lent ou injoignable ne doit pas bloquer un ecran ni les alertes.
+      mail.smtp.connectiontimeout: 15000
+      mail.smtp.timeout: 15000
+      mail.smtp.writetimeout: 15000
 
 server:
   port: ${SERVER_PORT:8080}
@@ -90,6 +101,10 @@ app:
     # A garder sous la taille du pool Oracle (DB_POOL_SIZE) pour laisser des connexions aux ecrans legers.
     traitements-lourds-simultanes: ${CHARGE_TRAITEMENTS_LOURDS:8}
     attente-secondes: ${CHARGE_ATTENTE_SECONDES:20}
+  mail:
+    # Expediteur des e-mails (notifications, alertes). Vide : MAIL_USERNAME s'il s'agit d'une
+    # adresse, sinon sms.contact@laposte.tg (voir service.MailService).
+    expediteur: ${MAIL_FROM:}
   supervision:
     # Adresse de la console, citee dans les e-mails d'alerte (ex. https://adminmobile.laposte.tg/supervision)
     url: ${SUPERVISION_URL:}

@@ -148,7 +148,7 @@ class SupervisionTest {
     void uneBaseInjoignableEstSignaleeSansEmpecherLesAutresMesures() throws Exception {
         DataSource ds = Mockito.mock(DataSource.class);
         Mockito.when(ds.getConnection()).thenThrow(new SQLException("ORA-28001: the password has expired"));
-        EtatSanteService service = new EtatSanteService(ds, vide(), vide(), vide(), System.getProperty("java.io.tmpdir"));
+        EtatSanteService service = new EtatSanteService(ds, vide(), vide(), vide(), vide(), "", System.getProperty("java.io.tmpdir"));
 
         EtatSante etat = service.etat();
         assertThat(etat.niveau()).isEqualTo(Niveau.CRITIQUE);
@@ -159,7 +159,7 @@ class SupervisionTest {
         // Les mesures locales restent disponibles.
         Indicateur memoire = etat.indicateurs().stream().filter(i -> i.code().equals("MEMOIRE")).findFirst().orElseThrow();
         assertThat(memoire.niveau()).isNotEqualTo(Niveau.INCONNU);
-        assertThat(etat.indicateurs()).hasSize(10);
+        assertThat(etat.indicateurs()).hasSize(11);
     }
 
     @SuppressWarnings("unchecked")
@@ -180,6 +180,7 @@ class SupervisionTest {
         Indicateur ok = new Indicateur("COMPTE_ORACLE", "Compte Oracle de l'application", "OPEN", Niveau.OK, "Valable", "");
         Mockito.when(etats.etat()).thenReturn(etat(Niveau.CRITIQUE, critique), etat(Niveau.CRITIQUE, critique), etat(Niveau.OK, ok));
 
+        Mockito.when(mail.estConfigure()).thenReturn(true);
         AlertesSupervision alertes = new AlertesSupervision(etats, mail, "exploit@laposte.tg, dsi@laposte.tg",
                 Duration.ofHours(1), "https://adminmobile/supervision");
         alertes.controler();
@@ -191,6 +192,53 @@ class SupervisionTest {
 
         alertes.controler(); // retour a la normale
         verify(mail).sendMessage(anyString(), contains("[RETABLI] Compte Oracle de l'application"), eq("exploit@laposte.tg"));
+    }
+
+    /** Cas reel : SUPERVISION_ALERTES_EMAILS renseigne, mais MAIL_HOST vide. */
+    @Test
+    void sansServeurSmtpLesAlertesNeSontPasTenteesEnBoucle() {
+        EtatSanteService etats = Mockito.mock(EtatSanteService.class);
+        MailService mail = Mockito.mock(MailService.class);
+        Mockito.when(mail.estConfigure()).thenReturn(false);
+        Mockito.when(etats.etat()).thenReturn(etat(Niveau.CRITIQUE,
+                new Indicateur("COMPTE_ORACLE", "Compte Oracle de l'application", "EXPIRED(GRACE)", Niveau.CRITIQUE, "", "")));
+        AlertesSupervision alertes = new AlertesSupervision(etats, mail, "succes.atchemi@laposte.tg", Duration.ofHours(1), "");
+        alertes.controler();
+        alertes.controler();
+        verify(mail, never()).sendMessage(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void lExpediteurNEstJamaisVide() {
+        org.springframework.mail.javamail.JavaMailSender sender = Mockito.mock(org.springframework.mail.javamail.JavaMailSender.class);
+        // .env reel : MAIL_USERNAME vide, MAIL_FROM absent -> expediteur historique.
+        assertThat(new MailService(sender, "", "", "").getExpediteur()).isEqualTo("sms.contact@laposte.tg");
+        assertThat(new MailService(sender, "", "", "").estConfigure()).isFalse();
+        // Identifiant SMTP qui n'est pas une adresse : ignore comme expediteur.
+        assertThat(new MailService(sender, "", "compte_smtp", "smtp.laposte.tg").getExpediteur()).isEqualTo("sms.contact@laposte.tg");
+        assertThat(new MailService(sender, "", "alertes@laposte.tg", "smtp.laposte.tg").getExpediteur()).isEqualTo("alertes@laposte.tg");
+        assertThat(new MailService(sender, " supervision@laposte.tg ", "alertes@laposte.tg", "smtp.laposte.tg").getExpediteur())
+                .isEqualTo("supervision@laposte.tg");
+        assertThat(new MailService(sender, "", "", "smtp.laposte.tg").estConfigure()).isTrue();
+    }
+
+    @Test
+    void lErreurDExpediteurVideEstDiagnostiquee() {
+        Diagnostic d = CatalogueDiagnostics.diagnostiquer(
+                "org.springframework.mail.MailParseException: Could not parse mail jakarta.mail.internet.AddressException: Illegal address in string ``''");
+        assertThat(d.code()).isEqualTo("MAIL_ADRESSE_INVALIDE");
+        assertThat(String.join(" ", d.actions())).contains("MAIL_FROM").contains("MAIL_HOST");
+    }
+
+    @Test
+    void lesRefusDuServeurDeMessagerieSontDiagnostiques() {
+        assertThat(code("org.springframework.mail.MailSendException: Failed messages: "
+                + "org.eclipse.angus.mail.smtp.SMTPSendFailedException: 530 5.7.0 Must issue a STARTTLS command first"))
+                .isEqualTo("MAIL_STARTTLS");
+        assertThat(code("SMTPSendFailedException: 553 5.7.1 <sms.contact@laposte.tg>: Sender address rejected: not owned by user succes.atchemi"))
+                .isEqualTo("MAIL_EXPEDITEUR_REFUSE");
+        assertThat(code("jakarta.mail.AuthenticationFailedException: 535 5.7.8 Error: authentication failed"))
+                .isEqualTo("MAIL_AUTHENTIFICATION");
     }
 
     @Test

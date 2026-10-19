@@ -1,6 +1,7 @@
 package com.laposte.adminmobile.supervision;
 
 import com.laposte.adminmobile.security.LoginAttemptService;
+import com.laposte.adminmobile.service.MailService;
 import com.laposte.adminmobile.web.ChargeFilter;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariPoolMXBean;
@@ -68,13 +69,19 @@ public class EtatSanteService {
     private final ObjectProvider<MeterRegistry> meterRegistry;
     private final ObjectProvider<ChargeFilter> chargeFilter;
     private final ObjectProvider<LoginAttemptService> loginAttemptService;
+    private final ObjectProvider<MailService> mailService;
+    private final boolean alertesDemandees;
     private final File dossierJournaux;
 
     public EtatSanteService(DataSource dataSource,
                             ObjectProvider<MeterRegistry> meterRegistry,
                             ObjectProvider<ChargeFilter> chargeFilter,
                             ObjectProvider<LoginAttemptService> loginAttemptService,
+                            ObjectProvider<MailService> mailService,
+                            @Value("${app.supervision.alertes.destinataires:}") String destinatairesAlertes,
                             @Value("${app.logs.dir:logs}") String dossierJournaux) {
+        this.mailService = mailService;
+        this.alertesDemandees = destinatairesAlertes != null && !destinatairesAlertes.isBlank();
         this.dataSource = dataSource;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.jdbcTemplate.setQueryTimeout(5);
@@ -96,6 +103,7 @@ public class EtatSanteService {
         indicateurs.add(mesurer("ERREURS", "Erreurs", this::erreurs));
         indicateurs.add(mesurer("TRAFIC", "Trafic HTTP (depuis le demarrage)", this::trafic));
         indicateurs.add(mesurer("CONNEXIONS", "Connexions a l'interface", this::connexions));
+        indicateurs.add(mesurer("MAIL", "E-mails (notifications, alertes)", this::mail));
 
         Niveau global = Niveau.OK;
         for (Indicateur i : indicateurs) {
@@ -289,6 +297,24 @@ public class EtatSanteService {
                 "Identifiants ou adresses IP bloques temporairement apres trop d'echecs (voir audit.log : CONNEXION_ECHEC)",
                 n == Niveau.OK ? "" : "Nombreux blocages : tentative d'intrusion possible, ou probleme general de mot de passe. "
                         + "Consulter audit.log (CONNEXION_ECHEC / CONNEXION_BLOQUEE).");
+    }
+
+    private Indicateur mail() {
+        MailService m = mailService.getIfAvailable();
+        if (m == null) {
+            return new Indicateur("MAIL", "E-mails (notifications, alertes)", "?", Niveau.INCONNU, "", "");
+        }
+        if (!m.estConfigure()) {
+            // Sans SMTP, les notifications (reclamations, suggestions) et les alertes ne partent pas.
+            return new Indicateur("MAIL", "E-mails (notifications, alertes)", "Serveur SMTP absent", Niveau.ALERTE,
+                    alertesDemandees ? "Des destinataires d'alertes sont configures, mais aucun e-mail ne peut partir."
+                            : "Ni notifications ni alertes ne peuvent etre envoyees par e-mail.",
+                    "Renseigner MAIL_HOST, MAIL_PORT et, si le serveur l'exige, MAIL_USERNAME / MAIL_PASSWORD dans .env "
+                            + "(demander les parametres SMTP a la DSI), puis redemarrer.");
+        }
+        return new Indicateur("MAIL", "E-mails (notifications, alertes)", "Configure", Niveau.OK,
+                "Expediteur " + m.getExpediteur() + (alertesDemandees ? ", alertes de supervision actives" : ", aucune alerte de supervision configuree"),
+                alertesDemandees ? "" : "Pour recevoir les alertes : SUPERVISION_ALERTES_EMAILS dans .env.");
     }
 
     // ---- Utilitaires -------------------------------------------------------------------------

@@ -15,7 +15,7 @@
 
     <groupId>tg.laposte</groupId>
     <artifactId>adminmobile</artifactId>
-    <version>1.8.0</version>
+    <version>1.8.1</version>
     <name>adminmobile</name>
     <description>Back-office mobile money (e-poste) - portage Spring Boot / Thymeleaf de l'application JSF legacy</description>
 

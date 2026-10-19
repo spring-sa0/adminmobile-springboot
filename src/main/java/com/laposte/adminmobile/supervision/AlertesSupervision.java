@@ -48,6 +48,7 @@ public class AlertesSupervision {
     private final Map<String, Long> dernierEnvoi = new HashMap<>();
     private final Set<String> indicateursEnAlerte = new HashSet<>();
     private long dernierControle = System.currentTimeMillis();
+    private boolean smtpManquantSignale;
 
     public AlertesSupervision(EtatSanteService etatSanteService, MailService mailService,
                               @Value("${app.supervision.alertes.destinataires:}") String destinataires,
@@ -58,6 +59,11 @@ public class AlertesSupervision {
         this.destinataires = Arrays.stream(destinataires.split("[,;\\s]+")).filter(s -> !s.isBlank()).toList();
         this.repetition = repetition;
         this.urlSupervision = urlSupervision;
+    }
+
+    /** Pour l'etat de sante : destinataires configures. */
+    public List<String> getDestinataires() {
+        return destinataires;
     }
 
     @Scheduled(initialDelayString = "${app.supervision.alertes.delai-initial:2m}",
@@ -120,6 +126,18 @@ public class AlertesSupervision {
                 + (urlSupervision.isBlank() ? "" : "\nDetail : " + urlSupervision)
                 + "\n\n-- Message automatique. Une meme alerte n'est pas repetee avant " + repetition.toMinutes() + " min.";
         log.warn("ALERTE SUPERVISION : {}", String.join(" | ", alertes).replace('\n', ' '));
+        if (destinataires.isEmpty()) {
+            return;
+        }
+        if (!mailService.estConfigure()) {
+            // Sans serveur SMTP, chaque envoi echouerait : un seul message, pas une erreur par alerte.
+            if (!smtpManquantSignale) {
+                log.warn("Supervision : alertes e-mail non envoyees, aucun serveur SMTP configure (MAIL_HOST vide dans .env). "
+                        + "Destinataires prevus : {}", destinataires);
+                smtpManquantSignale = true;
+            }
+            return;
+        }
         for (String destinataire : destinataires) {
             try {
                 mailService.sendMessage(sujet, corps, destinataire);

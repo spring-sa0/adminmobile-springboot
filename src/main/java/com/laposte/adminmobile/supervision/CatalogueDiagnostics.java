@@ -167,7 +167,37 @@ public final class CatalogueDiagnostics {
                     "Verifier les tables de travail remplies par la procedure du releve (vides ?).",
                     "Tester le rapport avec le numero de compte en cause."),
             // ---- Services externes -------------------------------------------------------------
-            regle("MailSendException|MailAuthenticationException|MailException|SMTP|javax?\\.mail|jakarta\\.mail",
+            regle("AddressException|Illegal address|MailParseException",
+                    "MAIL_ADRESSE_INVALIDE", "Adresse e-mail invalide (expediteur ou destinataire)", Gravite.MOYENNE, CONFIG,
+                    "Une adresse e-mail est vide ou mal formee. Cas le plus frequent : expediteur vide (\"Illegal address "
+                            + "in string ''\") ; ou destinataire mal saisi (alertes, notifications).",
+                    "Expediteur : renseigner MAIL_FROM dans .env (sinon MAIL_USERNAME s'il s'agit d'une adresse).",
+                    "Destinataires des alertes : verifier SUPERVISION_ALERTES_EMAILS (adresses separees par des virgules).",
+                    "Verifier aussi que MAIL_HOST est renseigne : sans serveur SMTP, aucun e-mail ne part (indicateur "
+                            + "\"E-mails\" de la supervision).",
+                    "Redemarrer l'application apres modification de .env."),
+            regle("STARTTLS",
+                    "MAIL_STARTTLS", "Le serveur de messagerie exige une connexion chiffree (STARTTLS)", Gravite.MOYENNE, CONFIG,
+                    "Le serveur SMTP (port 587 en general) refuse l'envoi tant que la connexion n'est pas chiffree : "
+                            + "\"530 Must issue a STARTTLS command first\".",
+                    "Verifier MAIL_STARTTLS=true dans .env (valeur par defaut).",
+                    "Verifier MAIL_PORT (587 pour la soumission chiffree).",
+                    "Redemarrer l'application apres modification de .env."),
+            regle("553|554|550 5\\.7\\.1|Sender address rejected|not owned by user|not authorized to send|Client does not have permissions to send as",
+                    "MAIL_EXPEDITEUR_REFUSE", "Expediteur refuse par le serveur de messagerie", Gravite.MOYENNE, CONFIG,
+                    "Le serveur refuse d'envoyer au nom de l'adresse expeditrice : elle ne correspond pas au compte SMTP "
+                            + "authentifie (MAIL_USERNAME).",
+                    "Renseigner MAIL_FROM dans .env avec l'adresse du compte SMTP (ex. <MAIL_USERNAME>@laposte.tg).",
+                    "Ou demander a la DSI le droit d'envoyer au nom de l'expediteur voulu (ex. sms.contact@laposte.tg).",
+                    "Redemarrer l'application apres modification de .env."),
+            regle("AuthenticationFailedException|MailAuthenticationException|535 |authentication failed",
+                    "MAIL_AUTHENTIFICATION", "Identifiants SMTP refuses", Gravite.MOYENNE, CONFIG,
+                    "Le serveur de messagerie refuse MAIL_USERNAME / MAIL_PASSWORD (erreur, mot de passe change ou expire).",
+                    "Verifier MAIL_USERNAME et MAIL_PASSWORD dans .env aupres de la DSI.",
+                    "Si le serveur n'exige pas d'authentification (relais interne) : MAIL_AUTH=false.",
+                    "Redemarrer l'application apres modification de .env."),
+            regle("MailSendException|MailAuthenticationException|MailException|MailConnectException|Couldn't connect to host"
+                            + "|SMTP|javax?\\.mail|jakarta\\.mail",
                     "MAIL_ECHEC", "Envoi d'e-mail impossible", Gravite.MOYENNE, EXTERNE,
                     "Le serveur de messagerie refuse ou ne repond pas (adresse, port, identifiants, pare-feu).",
                     "Verifier MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD dans .env.",
