@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Detail erreur')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <p><a th:href="@{/supervision}">&lsaquo; Retour a la supervision</a></p>
+    <h2 th:text="${groupe.diagnostic.titre}">Colonne inexistante en base</h2>
+
+    <div class="sup-entete-erreur">
+        <span class="sup-gravite" th:classappend="'grav-' + ${#strings.toLowerCase(groupe.diagnostic.gravite)}"
+              th:text="${groupe.diagnostic.gravite}">ELEVEE</span>
+        <span th:text="${groupe.diagnostic.categorie}"></span>
+        <span th:text="|${groupe.nombre} occurrence(s) - du ${#dates.format(groupe.premiereDate, 'dd/MM/yyyy HH:mm')} au ${#dates.format(groupe.derniereDate, 'dd/MM/yyyy HH:mm:ss')}|"></span>
+        <span th:if="${groupe.reapparue}" class="sup-gravite grav-elevee">Reapparue apres resolution</span>
+        <span th:if="${groupe.resolu}" class="sup-meta"
+              th:text="|Resolue le ${#dates.format(groupe.resoluLe, 'dd/MM/yyyy HH:mm')} par ${groupe.resoluPar}|"></span>
+    </div>
+
+    <!-- ---- Diagnostic et resolution ---- -->
+    <div class="sup-diagnostic">
+        <h3>Cause probable</h3>
+        <p th:text="${groupe.diagnostic.cause}"></p>
+        <h3>Comment resoudre</h3>
+        <ol>
+            <li th:each="a : ${groupe.diagnostic.actions}" th:text="${a}"></li>
+        </ol>
+        <form method="post" th:action="@{/supervision/erreurs/{id}/resolu(id=${groupe.id})}" th:if="${!groupe.resolu}"
+              onsubmit="return confirm('Marquer cette erreur comme resolue ? Elle reapparaitra si elle se reproduit.');">
+            <button type="submit">Marquer comme resolue</button>
+        </form>
+    </div>
+
+    <!-- ---- Derniere occurrence ---- -->
+    <div th:if="${derniere != null}">
+        <h3>Derniere occurrence</h3>
+        <table class="sup-fiche">
+            <tr><th>Date</th><td th:text="${#dates.format(derniere.date(), 'dd/MM/yyyy HH:mm:ss')}"></td></tr>
+            <tr th:if="${derniere.reference}"><th>Reference (vue par l'utilisateur)</th><td th:text="${derniere.reference}"></td></tr>
+            <tr th:if="${derniere.url}"><th>Ecran</th><td th:text="${derniere.url}"></td></tr>
+            <tr th:if="${derniere.utilisateur}"><th>Utilisateur</th><td th:text="${derniere.utilisateur}"></td></tr>
+            <tr><th>Message</th><td class="sup-cause" th:text="${derniere.message}"></td></tr>
+            <tr th:if="${derniere.causeRacine}"><th>Cause racine</th>
+                <td class="sup-cause" th:text="|${derniere.causeRacine} : ${derniere.messageCause}|"></td></tr>
+            <tr th:if="${derniere.ligneCode}"><th>Ligne de code</th><td class="sup-code" th:text="${derniere.ligneCode}"></td></tr>
+            <tr><th>Source</th><td class="sup-code" th:text="|${derniere.niveau} ${derniere.logger}|"></td></tr>
+        </table>
+        <details th:if="${derniere.trace}" class="sup-trace">
+            <summary>Trace technique complete</summary>
+            <pre th:text="${derniere.trace}"></pre>
+        </details>
+    </div>
+
+    <!-- ---- Occurrences recentes ---- -->
+    <h3 style="margin-top:22px">Occurrences recentes</h3>
+    <div style="overflow-x:auto">
+        <div th:replace="~{fragments/export :: boutons}"></div>
+        <table class="data-table">
+            <thead>
+            <tr><th>Date</th><th>Reference</th><th>Ecran</th><th>Utilisateur</th><th>Message</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="e : ${groupe.recentes}">
+                <td th:text="${#dates.format(e.date(), 'dd/MM/yyyy HH:mm:ss')}"></td>
+                <td th:text="${e.reference}"></td>
+                <td th:text="${e.url}"></td>
+                <td th:text="${e.utilisateur}"></td>
+                <td class="sup-cause" th:text="${e.message}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

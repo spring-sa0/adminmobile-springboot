@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Supervision')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Supervision de l'application</h2>
+    <!-- Etat de sante (supervision.EtatSanteService) et erreurs regroupees par cause, avec diagnostic
+         (supervision.JournalErreurs, supervision.CatalogueDiagnostics). Actualisation automatique. -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+
+    <!-- ---- Etat global ---- -->
+    <div class="sup-global" th:classappend="'sup-' + ${#strings.toLowerCase(etat.niveau)}">
+        <div>
+            <strong th:switch="${etat.niveau.name()}">
+                <span th:case="'OK'">Application en bonne sante</span>
+                <span th:case="'ALERTE'">Points d'attention</span>
+                <span th:case="'CRITIQUE'">Probleme critique en cours</span>
+                <span th:case="*">Etat incomplet</span>
+            </strong>
+            <span class="sup-meta" th:text="|Version ${etat.version} - demarree le ${#dates.format(etat.demarrage, 'dd/MM/yyyy HH:mm')} (${etat.dureeFonctionnement}) - mesure a ${#dates.format(etat.horodatage, 'HH:mm:ss')}|"></span>
+        </div>
+        <a class="export-btn" th:href="@{/supervision/catalogue}">Causes connues et solutions</a>
+    </div>
+
+    <!-- ---- Indicateurs ---- -->
+    <div class="sup-grille">
+        <div class="sup-carte" th:each="i : ${etat.indicateurs}" th:classappend="'sup-' + ${#strings.toLowerCase(i.niveau)}">
+            <div class="sup-carte-tete">
+                <span class="sup-nom" th:text="${i.nom}">Base Oracle</span>
+                <span class="sup-badge" th:text="${i.niveau}">OK</span>
+            </div>
+            <div class="sup-valeur" th:text="${i.valeur}">12 ms</div>
+            <div class="sup-detail" th:text="${i.detail}"></div>
+            <div class="sup-conseil" th:if="${!#strings.isEmpty(i.conseil)}">
+                <strong>Que faire :</strong> <span th:text="${i.conseil}"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ---- Erreurs ---- -->
+    <h3 style="margin-top:28px">Erreurs (30 derniers jours, regroupees par cause)</h3>
+    <form method="get" th:action="@{/supervision}" class="sup-filtres">
+        <a th:href="@{/supervision}" class="sup-filtre" th:classappend="${gravite == ''} ? 'actif'">Toutes</a>
+        <a th:each="g : ${gravites}"
+           th:href="@{/supervision(gravite=${g.name()})}" class="sup-filtre"
+           th:classappend="${gravite == g.name()} ? 'actif'"
+           th:text="|${g.name()} (${parGravite.get(g)})|">CRITIQUE (0)</a>
+        <a th:href="@{/supervision(resolues=${!resolues}, gravite=${gravite})}" class="sup-filtre"
+           th:text="${resolues} ? 'Masquer les resolues' : |Afficher les resolues (${nbResolues})|">Afficher les resolues</a>
+    </form>
+
+    <div style="overflow-x:auto">
+        <div th:replace="~{fragments/export :: boutons}"></div>
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Gravite</th>
+                <th>Diagnostic</th>
+                <th>Cause technique</th>
+                <th>Occurrences</th>
+                <th>Derniere</th>
+                <th>Premiere</th>
+                <th>Etat</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="g : ${groupes}">
+                <td><span class="sup-gravite" th:classappend="'grav-' + ${#strings.toLowerCase(g.diagnostic.gravite)}"
+                          th:text="${g.diagnostic.gravite}">ELEVEE</span></td>
+                <td>
+                    <a th:href="@{/supervision/erreurs/{id}(id=${g.id})}" th:text="${g.diagnostic.titre}">Colonne inexistante</a>
+                    <div class="sup-meta" th:text="${g.diagnostic.categorie}"></div>
+                </td>
+                <td class="sup-cause" th:with="d=${g.derniereOccurrence}"
+                    th:text="${d == null ? '' : (d.causeRacine == null ? d.message : (d.causeRacine + ' : ' + d.messageCause))}"></td>
+                <td th:text="${g.nombre}">3</td>
+                <td th:text="${#dates.format(g.derniereDate, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                <td th:text="${#dates.format(g.premiereDate, 'dd/MM/yyyy HH:mm')}"></td>
+                <td>
+                    <span th:if="${g.reapparue}" class="sup-gravite grav-elevee">Reapparue</span>
+                    <span th:if="${g.resolu}" class="sup-meta" th:text="|Resolue par ${g.resoluPar}|"></span>
+                    <span th:if="${!g.resolu and !g.reapparue}">Active</span>
+                </td>
+                <td><a th:href="@{/supervision/erreurs/{id}(id=${g.id})}">Detail et solution</a></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(groupes)}">
+                <td colspan="8">Aucune erreur a afficher.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="none">
+    // Actualisation toutes les 60 s, sauf si l'onglet est en arriere-plan.
+    setTimeout(function () {
+        if (document.visibilityState === 'visible') { location.reload(); }
+    }, 60000);
+</script>
+</body>
+</html>

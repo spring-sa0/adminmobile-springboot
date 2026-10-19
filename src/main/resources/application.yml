@@ -90,6 +90,14 @@ app:
     # A garder sous la taille du pool Oracle (DB_POOL_SIZE) pour laisser des connexions aux ecrans legers.
     traitements-lourds-simultanes: ${CHARGE_TRAITEMENTS_LOURDS:8}
     attente-secondes: ${CHARGE_ATTENTE_SECONDES:20}
+  supervision:
+    # Adresse de la console, citee dans les e-mails d'alerte (ex. https://adminmobile.laposte.tg/supervision)
+    url: ${SUPERVISION_URL:}
+    alertes:
+      # Destinataires des alertes, separes par des virgules. Vide = alertes seulement dans les journaux.
+      destinataires: ${SUPERVISION_ALERTES_EMAILS:}
+      # Delai minimal avant de renvoyer la meme alerte
+      repetition: ${SUPERVISION_ALERTES_REPETITION:1h}
   logs:
     # Dossier des journaux adminmobile.log et audit.log (voir logback-spring.xml)
     dir: ${LOG_DIR:logs}

@@ -2,12 +2,14 @@ package com.laposte.adminmobile.web;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.WebRequest;
 
+import java.security.Principal;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,7 +34,21 @@ public class ErrorReferenceAttributes extends DefaultErrorAttributes {
             String reference = HexFormat.of().withUpperCase().toHexDigits(ThreadLocalRandom.current().nextInt());
             attributes.put("reference", reference);
             Object path = webRequest.getAttribute("jakarta.servlet.error.request_uri", RequestAttributes.SCOPE_REQUEST);
-            log.error("Erreur {} (HTTP {}) sur {}", reference, code, path, getError(webRequest));
+            // Reference et URL dans le contexte de journalisation : la supervision rattache l'erreur
+            // a la reference vue par l'utilisateur (le filtre de contexte ne s'applique pas a la page d'erreur).
+            MDC.put("reference", reference);
+            if (MDC.get("url") == null && path != null) {
+                MDC.put("url", path.toString());
+            }
+            Principal utilisateur = webRequest.getUserPrincipal();
+            if (MDC.get("utilisateur") == null && utilisateur != null) {
+                MDC.put("utilisateur", utilisateur.getName());
+            }
+            try {
+                log.error("Erreur {} (HTTP {}) sur {}", reference, code, path, getError(webRequest));
+            } finally {
+                MDC.remove("reference");
+            }
         }
         return attributes;
     }

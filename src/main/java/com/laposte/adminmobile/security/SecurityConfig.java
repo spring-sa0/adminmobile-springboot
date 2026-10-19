@@ -50,6 +50,8 @@ public class SecurityConfig {
                 .requestMatchers("/parametres/**").hasRole("ADMINISTRATEUR")
                 .requestMatchers("/annulation-op/**").hasRole("ADMINISTRATEUR")
                 .requestMatchers("/gateway/**").hasRole("ADMINISTRATEUR")
+                // Console de supervision : traces d'erreur (SQL, donnees) reservees aux administrateurs.
+                .requestMatchers("/supervision", "/supervision/**").hasRole("ADMINISTRATEUR")
                 .requestMatchers("/reclamations/types").hasRole("ADMINISTRATEUR")
                 // Memes regles que l'affichage du menu (fragments/menu.html) : sans elles, un
                 // profil marchand/consultation atteignait tous les ecrans en tapant l'URL.

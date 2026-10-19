@@ -645,3 +645,50 @@ a.pager-btn:hover { border-color: var(--brand-500); color: var(--brand-500); tex
 }
 .export-btn:hover { border-color: var(--brand-500); color: var(--brand-500); text-decoration: none; }
 .export-btn svg { width: 15px; height: 15px; }
+
+/* ---------- Supervision (templates/supervision) ---------- */
+.sup-global {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 14px 18px; margin: 8px 0 18px;
+    border-radius: var(--radius-md); border: 1px solid var(--gray-200); border-left-width: 6px;
+    background: var(--surface);
+}
+.sup-global strong { display: block; font-size: 1.05rem; color: var(--gray-900); }
+.sup-meta { font-size: 0.8rem; color: var(--gray-500); }
+.sup-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.sup-carte {
+    padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--gray-200);
+    border-top-width: 4px; background: var(--surface); box-shadow: var(--shadow-sm);
+}
+.sup-carte-tete { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.sup-nom { font-size: 0.82rem; font-weight: 600; color: var(--gray-600); }
+.sup-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: var(--gray-100); color: var(--gray-700); }
+.sup-valeur { font-size: 1.25rem; font-weight: 700; color: var(--gray-900); margin: 6px 0 2px; }
+.sup-detail { font-size: 0.8rem; color: var(--gray-600); }
+.sup-conseil { margin-top: 8px; padding: 8px 10px; font-size: 0.8rem; border-radius: var(--radius-sm); background: var(--gray-100); color: var(--gray-800); }
+.sup-ok { border-color: var(--success-border); border-left-color: var(--success); border-top-color: var(--success); }
+.sup-ok .sup-badge { background: var(--success-bg); color: var(--success); }
+.sup-alerte { border-left-color: #d29a00; border-top-color: #d29a00; }
+.sup-alerte .sup-badge { background: #fff4d6; color: #8a6200; }
+.sup-critique { border-color: var(--danger-border); border-left-color: var(--danger); border-top-color: var(--danger); }
+.sup-critique .sup-badge { background: var(--danger-bg); color: var(--danger); }
+.sup-inconnu { border-left-color: var(--gray-400); border-top-color: var(--gray-400); }
+.sup-filtres { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.sup-filtre { padding: 4px 10px; border: 1px solid var(--gray-300); border-radius: 999px; font-size: 0.8rem; color: var(--gray-700); text-decoration: none; }
+.sup-filtre.actif, .sup-filtre:hover { border-color: var(--brand-500); color: var(--brand-500); text-decoration: none; }
+.sup-gravite { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+.grav-critique { background: var(--danger-bg); color: var(--danger); }
+.grav-elevee { background: #fff4d6; color: #8a6200; }
+.grav-moyenne { background: var(--brand-100); color: var(--brand-600); }
+.grav-faible { background: var(--gray-100); color: var(--gray-600); }
+.sup-cause { font-size: 0.82rem; max-width: 520px; word-break: break-word; }
+.sup-code { font-family: Consolas, Menlo, monospace; font-size: 0.8rem; word-break: break-all; }
+.sup-entete-erreur { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: var(--gray-600); font-size: 0.85rem; margin-bottom: 14px; }
+.sup-diagnostic { padding: 14px 18px; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); margin-bottom: 18px; }
+.sup-diagnostic h3 { margin: 6px 0; font-size: 0.95rem; }
+.sup-diagnostic ol, .sup-actions { margin: 4px 0 10px; padding-left: 20px; }
+.sup-actions li { font-size: 0.82rem; }
+.sup-fiche { border-collapse: collapse; margin-bottom: 10px; }
+.sup-fiche th { text-align: left; padding: 4px 14px 4px 0; color: var(--gray-600); font-weight: 600; font-size: 0.82rem; vertical-align: top; white-space: nowrap; }
+.sup-fiche td { padding: 4px 0; font-size: 0.85rem; }
+.sup-trace pre { max-height: 420px; overflow: auto; padding: 10px; background: var(--gray-100); border-radius: var(--radius-sm); font-size: 0.75rem; white-space: pre-wrap; }
