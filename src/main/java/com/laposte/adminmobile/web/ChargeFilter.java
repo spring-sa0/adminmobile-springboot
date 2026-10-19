@@ -40,12 +40,33 @@ public class ChargeFilter extends OncePerRequestFilter {
     private final Semaphore places;
     private final int maxSimultanes;
     private final long attenteSecondes;
+    private final java.util.concurrent.atomic.AtomicLong refus = new java.util.concurrent.atomic.AtomicLong();
+    private volatile long dernierRefus;
 
     public ChargeFilter(@Value("${app.charge.traitements-lourds-simultanes:8}") int maxSimultanes,
                         @Value("${app.charge.attente-secondes:20}") long attenteSecondes) {
         this.maxSimultanes = maxSimultanes;
         this.attenteSecondes = attenteSecondes;
         this.places = new Semaphore(maxSimultanes, true);
+    }
+
+    /** Pour la supervision : traitements lourds en cours. */
+    public int getEnCours() {
+        return maxSimultanes - places.availablePermits();
+    }
+
+    public int getMaxSimultanes() {
+        return maxSimultanes;
+    }
+
+    /** Requetes refusees (503) depuis le demarrage. */
+    public long getRefus() {
+        return refus.get();
+    }
+
+    /** Instant du dernier refus (millisecondes epoch), 0 si aucun. */
+    public long getDernierRefus() {
+        return dernierRefus;
     }
 
     @Override
@@ -72,6 +93,8 @@ public class ChargeFilter extends OncePerRequestFilter {
             obtenu = false;
         }
         if (!obtenu) {
+            refus.incrementAndGet();
+            dernierRefus = System.currentTimeMillis();
             log.warn("Surcharge : {} traitements lourds deja en cours, requete refusee apres {} s d'attente : {}",
                     maxSimultanes, attenteSecondes, request.getRequestURI());
             response.setHeader("Retry-After", "30");

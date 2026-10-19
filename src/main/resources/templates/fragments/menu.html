@@ -53,6 +53,14 @@
             </ul>
         </details>
 
+        <details sec:authorize="hasRole('ADMINISTRATEUR')">
+            <summary>Supervision</summary>
+            <ul>
+                <li><a th:href="@{/supervision}">Etat de sante et erreurs</a></li>
+                <li><a th:href="@{/supervision/catalogue}">Causes connues et solutions</a></li>
+            </ul>
+        </details>
+
         <details sec:authorize="hasAuthority('PROFIL_MENU')">
             <summary>Annulation Operations</summary>
             <ul>

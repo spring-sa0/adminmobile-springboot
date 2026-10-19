@@ -15,7 +15,7 @@
 
     <groupId>tg.laposte</groupId>
     <artifactId>adminmobile</artifactId>
-    <version>1.7.0</version>
+    <version>1.8.1</version>
     <name>adminmobile</name>
     <description>Back-office mobile money (e-poste) - portage Spring Boot / Thymeleaf de l'application JSF legacy</description>
 
@@ -132,6 +132,17 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
 
+            </plugin>
+            <plugin>
+                <!-- Journaux des tests (dont les erreurs volontaires reprises par la supervision)
+                     dans target/, pas dans le dossier logs/ de l'application. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <environmentVariables>
+                        <LOG_DIR>${project.build.directory}/logs-tests</LOG_DIR>
+                    </environmentVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>

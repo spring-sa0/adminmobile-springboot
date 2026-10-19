@@ -76,6 +76,24 @@ class AllPagesTest {
     @Autowired
     private TypeReclammationService typeReclammationService;
 
+    @Autowired
+    private com.laposte.adminmobile.supervision.EtatSanteService etatSanteService;
+
+    /** Etat de sante type : une alerte critique (mot de passe Oracle expire), le reste OK. */
+    @org.junit.jupiter.api.BeforeEach
+    void etatDeSanteExemple() {
+        var critique = new com.laposte.adminmobile.supervision.EtatSanteService.Indicateur("COMPTE_ORACLE",
+                "Compte Oracle de l'application", "EXPIRED(GRACE)",
+                com.laposte.adminmobile.supervision.EtatSanteService.Niveau.CRITIQUE,
+                "Mot de passe expire", "Faire changer le mot de passe et mettre a jour DB_PASSWORD");
+        var ok = new com.laposte.adminmobile.supervision.EtatSanteService.Indicateur("BASE", "Base Oracle", "12 ms",
+                com.laposte.adminmobile.supervision.EtatSanteService.Niveau.OK, "Temps de reponse", "");
+        Mockito.doReturn(new com.laposte.adminmobile.supervision.EtatSanteService.EtatSante(
+                        com.laposte.adminmobile.supervision.EtatSanteService.Niveau.CRITIQUE, new Date(), "1.8.0", new Date(),
+                        "2 h 5 min", List.of(critique, ok)))
+                .when(etatSanteService).etat();
+    }
+
     @TestConfiguration
     static class MockServices {
         /**
@@ -98,6 +116,7 @@ class AllPagesTest {
                 public void postProcessBeanFactory(org.springframework.beans.factory.config.ConfigurableListableBeanFactory f) {
                     List<Class<?>> types = List.of(
                             ApplimobileService.class, BankToBankReportService.class, CashpowerService.class, CommissionsReportService.class,
+                            com.laposte.adminmobile.supervision.EtatSanteService.class,
                             CompteAppLierService.class, ComptesReportService.class, EposteFabricatedReportService.class,
                             FormatsService.class, FrequencesService.class, JasperReportService.class, MailService.class,
                             MarchandReportService.class, ModifCodesecretService.class, OperationService.class,
@@ -139,6 +158,7 @@ class AllPagesTest {
             "/annulation-op/restaurer", "/annulation-op/restaurer?numop=1",
             "/annulation-op/cashpower", "/annulation-op/cashpower?numop=1", "/annulation-op/cashpower?numop=abc",
             "/annulation-op/annulees", "/annulation-op/annulees?" + P, "/annulation-op/annulees?type=CASHPOWER&" + P,
+            "/supervision", "/supervision?gravite=CRITIQUE", "/supervision?resolues=true", "/supervision/catalogue",
             "/etats/transactions/bank-to-wallet", "/etats/transactions/bank-to-wallet?operateur=TMoney&" + P,
             "/etats/transactions/wallet-to-bank", "/etats/transactions/wallet-to-bank?" + P,
             "/etats/transactions/bank-to-bank", "/etats/transactions/bank-to-bank?operateur=FLooz&" + P,
@@ -549,6 +569,58 @@ class AllPagesTest {
         verify(cashpowerService, never()).annuler(Mockito.eq(1L), any());
     }
 
+    // ---- Supervision -------------------------------------------------------------------------
+
+    /**
+     * Parcours complet : une vraie erreur 500 (colonne Oracle inexistante) apparait dans la
+     * supervision avec son diagnostic, ses etapes de resolution et la reference vue par l'utilisateur,
+     * puis est marquee resolue.
+     */
+    @Test
+    @WithMockUser(username = "admin1", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneErreurApparaitDansLaSupervisionAvecSaSolution() throws Exception {
+        MvcResult page500 = mvc.perform(get("/error").accept(MediaType.TEXT_HTML)
+                        .requestAttr(RequestDispatcher.ERROR_STATUS_CODE, 500)
+                        .requestAttr(RequestDispatcher.ERROR_REQUEST_URI, "/consultations/operations")
+                        .requestAttr(RequestDispatcher.ERROR_EXCEPTION, new IllegalStateException("acces base",
+                                new java.sql.SQLException("ORA-00904: \"RE1_0\".\"COLONNE_TEST_SUPERVISION\" : identificateur non valide"))))
+                .andReturn();
+        String reference = page500.getResponse().getContentAsString().replaceAll("(?s).*<strong>([0-9A-F]{8})</strong>.*", "$1");
+
+        com.laposte.adminmobile.supervision.GroupeErreurs groupe = com.laposte.adminmobile.supervision.JournalErreurs.instance()
+                .groupes().stream()
+                .filter(g -> g.getDerniereOccurrence() != null && reference.equals(g.getDerniereOccurrence().reference()))
+                .findFirst().orElseThrow();
+        assertThat(groupe.getDiagnostic().code()).isEqualTo("SCHEMA_COLONNE_INEXISTANTE");
+
+        mvc.perform(get("/supervision"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Probleme critique en cours")))
+                .andExpect(content().string(containsString("Faire changer le mot de passe et mettre a jour DB_PASSWORD")))
+                .andExpect(content().string(containsString("Colonne inexistante en base")));
+
+        mvc.perform(get("/supervision/erreurs/" + groupe.getId()))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Comment resoudre")))
+                .andExpect(content().string(containsString("all_tab_columns")))
+                .andExpect(content().string(containsString(reference)))
+                .andExpect(content().string(containsString("/consultations/operations")))
+                .andExpect(content().string(containsString("COLONNE_TEST_SUPERVISION")));
+
+        mvc.perform(post("/supervision/erreurs/" + groupe.getId() + "/resolu").with(csrf()))
+                .andExpect(status().is3xxRedirection());
+        assertThat(groupe.isResolu()).isTrue();
+        assertThat(groupe.getResoluPar()).isEqualTo("admin1");
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_UTILISATEUR", "PROFIL_USER", "MARCHAND"})
+    void seulsLesAdministrateursAccedentALaSupervision() throws Exception {
+        mvc.perform(get("/supervision")).andExpect(status().isForbidden());
+        mvc.perform(get("/supervision/catalogue")).andExpect(status().isForbidden());
+        mvc.perform(post("/supervision/erreurs/1/resolu").with(csrf())).andExpect(status().isForbidden());
+    }
+
     /** L'export suit les regles d'acces de la page : pas de fichier sans les droits sur l'ecran. */
     @Test
     void exportRespectsPageAccessRules() throws Exception {
@@ -576,7 +648,7 @@ class AllPagesTest {
                 assertThat(html).as(template.getFilename()).contains("fragments/export :: boutons");
             }
         }
-        assertThat(listes).isEqualTo(60);
+        assertThat(listes).isEqualTo(63);
     }
 
     @Test

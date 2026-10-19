@@ -9,7 +9,7 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.7.0 |
+| Version | 1.8.0 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
@@ -22,13 +22,14 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 1. [Demarrage rapide](#demarrage-rapide)
 2. [Configuration](#configuration)
 3. [Deploiement (Docker)](#deploiement-docker)
-4. [Authentification et profils](#authentification-et-profils)
-5. [Ecrans de recherche](#ecrans-de-recherche)
-6. [Securite](#securite)
-7. [Organisation du code](#organisation-du-code)
-8. [Tests et integration continue](#tests-et-integration-continue)
-9. [Points d'attention](#points-dattention)
-10. [Backlog](#backlog)
+4. [Supervision](#supervision)
+5. [Authentification et profils](#authentification-et-profils)
+6. [Ecrans de recherche](#ecrans-de-recherche)
+7. [Securite](#securite)
+8. [Organisation du code](#organisation-du-code)
+9. [Tests et integration continue](#tests-et-integration-continue)
+10. [Points d'attention](#points-dattention)
+11. [Backlog](#backlog)
 
 ---
 
@@ -74,6 +75,8 @@ ou via `env_file` en Docker. **Aucun identifiant ne doit etre ecrit dans le code
 | `EXPORT_MAX_LIGNES_EXCEL` | non | `50000` | Lignes maximum par export Excel d'une liste |
 | `EXPORT_MAX_LIGNES_PDF` | non | `5000` | Lignes maximum par export PDF d'une liste |
 | `CHARGE_TRAITEMENTS_LOURDS` | non | `8` | Recherches sur periode / exports executes en meme temps (rester sous `DB_POOL_SIZE`) |
+| `SUPERVISION_ALERTES_EMAILS` | non | - | Destinataires des alertes de supervision (separes par des virgules) |
+| `SUPERVISION_URL` | non | - | Adresse de la console, citee dans les alertes |
 | `CHARGE_ATTENTE_SECONDES` | non | `20` | Attente d'une place avant la page « service momentanement indisponible » |
 | `JAVA_OPTS` | non | `-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError` | Options de la JVM (Docker) |
 
@@ -171,6 +174,48 @@ identifiants Oracle, ils ne doivent pas circuler en clair.
 L'application prend en compte les en-tetes `X-Forwarded-*` du proxy
 (`server.forward-headers-strategy: native`) : le cookie de session est alors marque `Secure`
 et l'IP reelle du client sert au blocage des tentatives de connexion.
+
+## Supervision
+
+Console integree, reservee aux administrateurs : menu **Supervision** (`/supervision`). Aucun
+outil ni serveur supplementaire ; aucune donnee ne sort du reseau.
+
+**Etat de sante** (actualise chaque minute), chaque indicateur avec son niveau (OK / ALERTE /
+CRITIQUE) et, s'il n'est pas vert, quoi faire :
+
+| Indicateur | Alerte / critique |
+|---|---|
+| Base Oracle (requete reelle) | lente > 1 s / injoignable (avec diagnostic de la cause) |
+| Compte Oracle de l'application | mot de passe expirant sous 15 jours / expire (`EXPIRED(GRACE)`) ou verrouille |
+| Connexions Oracle (pool) | >= 80 % occupees / sature, requetes en attente |
+| Memoire Java, processeur, disque | > 85 % / > 95 % ; disque < 10 % / < 3 % libre |
+| Charge (recherches / exports lourds) | refus « service momentanement indisponible » dans les 15 min |
+| Erreurs | > 20 / h ; erreur critique dans l'heure |
+| Trafic HTTP | > 5 % de requetes en erreur serveur |
+| Connexions a l'interface | nombreux blocages (attaque ou probleme de mot de passe) |
+
+**Journal des erreurs** : toute erreur de l'application (journalisee en ERROR, ou WARN avec
+exception) est capturee (`supervision/JournalErreursAppender`), **regroupee par cause** et
+affichee avec : nombre d'occurrences, premiere / derniere, ecran, utilisateur, reference montree
+sur la page 500, ligne de code, trace complete. Conservation 30 jours dans `<LOG_DIR>/erreurs`
+(rechargee au redemarrage, y compris apres un arret brutal).
+
+**Diagnostic et resolution** : chaque erreur est comparee au catalogue des causes connues
+(`supervision/CatalogueDiagnostics.java`, page « Causes connues et solutions », exportable en PDF
+comme procedure d'exploitation) : mot de passe Oracle expire, compte verrouille, base injoignable,
+pool sature, colonne / table inexistante, droits, signature de procedure, doublon, saisie trop
+longue, memoire, disque, police Jasper, SMTP... Chaque cause donne sa gravite, sa cause probable et
+les etapes de resolution. Une erreur traitee peut etre **marquee resolue** : elle quitte la liste
+et y revient, signalee « reapparue », si elle se reproduit.
+
+**Alertes par e-mail** (`SUPERVISION_ALERTES_EMAILS`, necessite la configuration `MAIL_*`) :
+indicateur critique, expiration proche du mot de passe Oracle ou disque presque plein, nouvelle
+erreur critique ou elevee ; une meme alerte n'est pas repetee avant 1 h ; message de
+retablissement au retour a la normale. Sans destinataire, les alertes sont ecrites dans le
+journal (`ALERTE SUPERVISION`).
+
+Pour enrichir le diagnostic, ajouter une regle dans `CatalogueDiagnostics` (motif sur le code
+Oracle ou la classe d'exception, puis cause et actions concretes).
 
 ## Authentification et profils
 
@@ -281,6 +326,7 @@ src/main/java/com/laposte/adminmobile/
 ├── repository/   acces aux donnees (Spring Data JPA, requetes natives, JdbcTemplate)
 ├── entities/     entites JPA (portees du legacy)
 ├── export/       export Excel / PDF des listes affichees
+├── supervision/  etat de sante, journal et diagnostic des erreurs, alertes
 └── util/         utilitaires (generation de mots de passe)
 
 src/main/resources/
@@ -322,6 +368,9 @@ mvn test
   connexion a Oracle.
 - `SaisiesEtPaginationTest`, `AuditTest` : regles de saisie, calcul des pages, nettoyage des
   lignes d'audit.
+- `SupervisionTest` : diagnostic des causes connues, regroupement des erreurs, persistance et
+  resolutions apres redemarrage, etat de sante avec base injoignable, alertes e-mail (envoi,
+  non-repetition, retablissement). Les journaux des tests sont ecrits dans `target/logs-tests`.
 - `JasperFontsTest` : toute police citee dans un `.jrxml` doit etre embarquee
   (`fonts/fonts.xml` : Arial et Times New Roman sont fournies par Liberation Sans / Serif, de
   memes metriques, car absentes sous Linux), et les rapports se remplissent et s'exportent

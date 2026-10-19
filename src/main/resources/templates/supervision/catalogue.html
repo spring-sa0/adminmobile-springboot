@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Causes connues')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <p><a th:href="@{/supervision}">&lsaquo; Retour a la supervision</a></p>
+    <h2>Causes d'erreur connues et solutions</h2>
+    <p class="sup-meta">Chaque erreur de l'application est comparee a ce catalogue
+        (supervision/CatalogueDiagnostics.java) pour proposer sa cause et sa resolution. Exportable en PDF
+        comme procedure d'exploitation.</p>
+
+    <div style="overflow-x:auto">
+        <div th:replace="~{fragments/export :: boutons}"></div>
+        <table class="data-table">
+            <thead>
+            <tr><th>Gravite</th><th>Probleme</th><th>Domaine</th><th>Cause probable</th><th>Comment resoudre</th></tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${regles}">
+                <td><span class="sup-gravite" th:classappend="'grav-' + ${#strings.toLowerCase(r.gravite)}"
+                          th:text="${r.gravite}">CRITIQUE</span></td>
+                <td th:text="${r.titre}"></td>
+                <td th:text="${r.categorie}"></td>
+                <td th:text="${r.cause}"></td>
+                <td>
+                    <ol class="sup-actions"><li th:each="a : ${r.actions}" th:text="${a}"></li></ol>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

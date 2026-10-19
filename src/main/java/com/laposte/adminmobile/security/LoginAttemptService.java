@@ -38,6 +38,15 @@ public class LoginAttemptService {
         this.lockDuration = lockDuration;
     }
 
+    /** Pour la supervision : identifiants et adresses IP actuellement bloques. */
+    public long nombreBloques() {
+        Instant now = Instant.now();
+        return attempts.entrySet().stream()
+                .filter(e -> e.getValue().expiresAt.isAfter(now))
+                .filter(e -> e.getValue().count >= (e.getKey().startsWith("ip:") ? maxAttemptsPerIp : maxAttemptsPerLogin))
+                .count();
+    }
+
     public boolean isBlocked(String login, String ip) {
         return isBlocked(loginKey(login), maxAttemptsPerLogin) || isBlocked(ipKey(ip), maxAttemptsPerIp);
     }

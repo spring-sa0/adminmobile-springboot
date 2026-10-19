@@ -21,14 +21,41 @@ import org.springframework.stereotype.Service;
 @Service
 public class MailService {
 
+    /** Expediteur historique de l'application (maildao). */
+    static final String EXPEDITEUR_PAR_DEFAUT = "sms.contact@laposte.tg";
+
     private final JavaMailSender mailSender;
     private final String from;
+    private final boolean configure;
 
+    /**
+     * Expediteur : MAIL_FROM s'il est renseigne, sinon MAIL_USERNAME si c'est une adresse, sinon
+     * l'expediteur historique. (Auparavant, un MAIL_USERNAME vide donnait un expediteur vide et tous
+     * les envois echouaient : "Illegal address in string ''".)
+     */
     @Autowired
     public MailService(JavaMailSender mailSender,
-                        @Value("${spring.mail.username:sms.contact@laposte.tg}") String from) {
+                       @Value("${app.mail.expediteur:}") String expediteur,
+                       @Value("${spring.mail.username:}") String utilisateur,
+                       @Value("${spring.mail.host:}") String serveur) {
         this.mailSender = mailSender;
-        this.from = from;
+        this.from = !isBlank(expediteur) ? expediteur.trim()
+                : !isBlank(utilisateur) && utilisateur.contains("@") ? utilisateur.trim()
+                : EXPEDITEUR_PAR_DEFAUT;
+        this.configure = !isBlank(serveur);
+    }
+
+    /** Vrai si un serveur SMTP est renseigne (MAIL_HOST) : sinon aucun envoi ne peut aboutir. */
+    public boolean estConfigure() {
+        return configure;
+    }
+
+    public String getExpediteur() {
+        return from;
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 
     /**

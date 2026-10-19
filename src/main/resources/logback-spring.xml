@@ -40,6 +40,12 @@
         </encoder>
     </appender>
 
+    <!-- Supervision : toutes les erreurs, regroupees par cause et diagnostiquees (page /supervision),
+         conservees 30 jours dans ${LOG_DIR}/erreurs. Voir supervision.JournalErreursAppender. -->
+    <appender name="SUPERVISION" class="com.laposte.adminmobile.supervision.JournalErreursAppender">
+        <dossier>${LOG_DIR}</dossier>
+    </appender>
+
     <logger name="AUDIT" level="INFO" additivity="false">
         <appender-ref ref="AUDIT_FICHIER"/>
         <appender-ref ref="CONSOLE"/>
@@ -48,5 +54,6 @@
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FICHIER"/>
+        <appender-ref ref="SUPERVISION"/>
     </root>
 </configuration>
