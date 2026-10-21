@@ -119,7 +119,8 @@ class AllPagesTest {
                 @Override
                 public void postProcessBeanFactory(org.springframework.beans.factory.config.ConfigurableListableBeanFactory f) {
                     List<Class<?>> types = List.of(
-                            ApplimobileService.class, BankToBankReportService.class, CashpowerService.class, CommissionsReportService.class,
+                            ApplimobileService.class, BankToBankReportService.class, CashpowerService.class,
+                            com.laposte.adminmobile.service.CashpowerOperationsService.class, CommissionsReportService.class,
                             com.laposte.adminmobile.supervision.EtatSanteService.class,
                             CompteAppLierService.class, ComptesReportService.class, EposteFabricatedReportService.class,
                             FormatsService.class, FrequencesService.class, JasperReportService.class, MailService.class,
@@ -173,6 +174,8 @@ class AllPagesTest {
             "/etats/transactions/global", "/etats/transactions/global?" + P,
             "/etats/transactions/ecoccp", "/etats/transactions/ecoccp?" + P,
             "/etats/transactions/ecoccp-annulees", "/etats/transactions/ecoccp-annulees?" + P,
+            "/etats/cashpower", "/etats/cashpower?" + P, "/etats/cashpower?application=MARCHAND&statut=NON_ABOUTIES&" + P,
+            "/etats/cashpower?application=inconnue&statut=x&" + P,
             "/comptes/nombre", "/comptes/nombre?" + P,
             "/comptes/liste-ecoccp", "/comptes/liste-ecoccp?" + P,
             "/comptes/actifs", "/comptes/actifs?" + P,
@@ -500,6 +503,46 @@ class AllPagesTest {
         mvc.perform(get("/parametres/assistance-creation")).andExpect(status().isForbidden());
         mvc.perform(post("/parametres/assistance-creation").with(csrf()).param("telephone", "91000001"))
                 .andExpect(status().isForbidden());
+    }
+
+    // ---- Operations Cash Power par application et par statut ----------------------------------
+
+    @Autowired
+    private CashpowerOperationsService cashpowerOperationsService;
+
+    private static CashpowerOperationsService.AchatCashpower achat(String application, String statut, String montant) {
+        return new CashpowerOperationsService.AchatCashpower(new Date(), application, statut, 104000001L, "KOFFI AMA",
+                "90000000", "01234567890", new java.math.BigDecimal(montant), "12.5", "1234-5678", "RECU-1");
+    }
+
+    @Test
+    @WithMockUser(authorities = {"PROFIL_USER"})
+    void lesAchatsCashpowerSontFiltresEtRecapitulesParStatut() throws Exception {
+        Mockito.doReturn(List.of(achat("Marchand", "Echouee", "5000"), achat("Marchand", "Echouee", "2000"),
+                        achat("Marchand", "En attente", "1000")))
+                .when(cashpowerOperationsService).operations(any(), any(),
+                        eq(CashpowerOperationsService.Application.MARCHAND), eq(CashpowerOperationsService.Statut.NON_ABOUTIES));
+        mvc.perform(get("/etats/cashpower?application=marchand&statut=NON_ABOUTIES&" + P))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Recapitulatif par application et par statut")))
+                .andExpect(content().string(matchesPattern("(?s).*<td>Echouee</td>\\s*<td>2</td>\\s*<td>7 000</td>.*")))
+                .andExpect(content().string(matchesPattern("(?s).*<td>En attente</td>\\s*<td>1</td>\\s*<td>1 000</td>.*")));
+    }
+
+    @Test
+    void leRecapitulatifCashpowerSuitLOrdreDeLaListe() {
+        var recap = CashpowerOperationsService.recapitulatif(List.of(achat("E-Poste", "Aboutie", "100"),
+                achat("E-Poste", "Echouee", "50"), achat("E-Poste", "Echouee", "25"), achat("Marchand", "Aboutie", "10")));
+        assertThat(recap).extracting(CashpowerOperationsService.LigneRecap::statut)
+                .containsExactly("Aboutie", "Echouee", "Aboutie");
+        assertThat(recap.get(1).nombre()).isEqualTo(2);
+        assertThat(recap.get(1).montant()).isEqualByComparingTo("75");
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_MARCHAND", "MARCHAND"})
+    void lesAchatsCashpowerSontReservesAuProfilUtilisateur() throws Exception {
+        mvc.perform(get("/etats/cashpower?" + P)).andExpect(status().isForbidden());
     }
 
     /** Le bouton est desactive des l'envoi, pour qu'un second clic ne parte pas. */
@@ -852,7 +895,7 @@ class AllPagesTest {
                 assertThat(html).as(template.getFilename()).contains("fragments/export :: boutons");
             }
         }
-        assertThat(listes).isEqualTo(64);
+        assertThat(listes).isEqualTo(65);
     }
 
     @Test
