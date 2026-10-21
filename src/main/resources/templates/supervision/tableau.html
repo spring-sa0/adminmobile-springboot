@@ -9,6 +9,12 @@
     <!-- Etat de sante (supervision.EtatSanteService) et erreurs regroupees par cause, avec diagnostic
          (supervision.JournalErreurs, supervision.CatalogueDiagnostics). Actualisation automatique. -->
     <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="sup-diagnostic" th:if="${echecMail != null}" style="border-color:var(--danger-border)">
+        <h3 th:text="|Echec de l'e-mail de test : ${echecMail.titre}|">Echec</h3>
+        <p class="sup-cause" th:text="${detailEchecMail}"></p>
+        <p th:text="${echecMail.cause}"></p>
+        <ol><li th:each="a : ${echecMail.actions}" th:text="${a}"></li></ol>
+    </div>
 
     <!-- ---- Etat global ---- -->
     <div class="sup-global" th:classappend="'sup-' + ${#strings.toLowerCase(etat.niveau)}">
@@ -21,7 +27,12 @@
             </strong>
             <span class="sup-meta" th:text="|Version ${etat.version} - demarree le ${#dates.format(etat.demarrage, 'dd/MM/yyyy HH:mm')} (${etat.dureeFonctionnement}) - mesure a ${#dates.format(etat.horodatage, 'HH:mm:ss')}|"></span>
         </div>
-        <a class="export-btn" th:href="@{/supervision/catalogue}">Causes connues et solutions</a>
+        <span style="display:flex;gap:8px;flex-wrap:wrap">
+            <form method="post" th:action="@{/supervision/test-mail}" style="margin:0">
+                <button type="submit" class="export-btn" title="Envoie un e-mail de test aux destinataires des alertes">Tester l'envoi d'e-mail</button>
+            </form>
+            <a class="export-btn" th:href="@{/supervision/catalogue}">Causes connues et solutions</a>
+        </span>
     </div>
 
     <!-- ---- Indicateurs ---- -->

@@ -79,6 +79,9 @@ class AllPagesTest {
     @Autowired
     private com.laposte.adminmobile.supervision.EtatSanteService etatSanteService;
 
+    @Autowired
+    private MailService mailService;
+
     /** Etat de sante type : une alerte critique (mot de passe Oracle expire), le reste OK. */
     @org.junit.jupiter.api.BeforeEach
     void etatDeSanteExemple() {
@@ -611,6 +614,19 @@ class AllPagesTest {
                 .andExpect(status().is3xxRedirection());
         assertThat(groupe.isResolu()).isTrue();
         assertThat(groupe.getResoluPar()).isEqualTo("admin1");
+    }
+
+    /** Sans destinataire configure (cas des tests), le bouton explique quoi renseigner. */
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void leTestDEnvoiSansDestinataireExpliqueQuoiRenseigner() throws Exception {
+        // Simulation partagee : d'autres tests (notifications de reclamations...) l'ont deja appelee.
+        Mockito.clearInvocations(mailService);
+        mvc.perform(post("/supervision/test-mail").with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("detailEchecMail", containsString("SUPERVISION_ALERTES_EMAILS")));
+        Mockito.verify(mailService, never()).sendMessage(anyString(), anyString(), anyString());
     }
 
     @Test

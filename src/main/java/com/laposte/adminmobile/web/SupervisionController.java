@@ -1,6 +1,9 @@
 package com.laposte.adminmobile.web;
 
+import com.laposte.adminmobile.service.MailService;
 import com.laposte.adminmobile.supervision.CatalogueDiagnostics;
+import org.springframework.beans.factory.annotation.Value;
+import java.util.Arrays;
 import com.laposte.adminmobile.supervision.Diagnostic;
 import com.laposte.adminmobile.supervision.EtatSanteService;
 import com.laposte.adminmobile.supervision.GroupeErreurs;
@@ -27,9 +30,50 @@ import java.util.Map;
 public class SupervisionController {
 
     private final EtatSanteService etatSanteService;
+    private final MailService mailService;
+    private final List<String> destinatairesAlertes;
 
-    public SupervisionController(EtatSanteService etatSanteService) {
+    public SupervisionController(EtatSanteService etatSanteService, MailService mailService,
+                                 @Value("${app.supervision.alertes.destinataires:}") String destinatairesAlertes) {
         this.etatSanteService = etatSanteService;
+        this.mailService = mailService;
+        this.destinatairesAlertes = Arrays.stream(destinatairesAlertes.split("[,;\\s]+")).filter(s -> !s.isBlank()).toList();
+    }
+
+    /**
+     * Envoie un e-mail de test aux destinataires des alertes : verifie toute la chaine (serveur,
+     * STARTTLS, identifiants, expediteur) et, en cas d'echec, affiche le diagnostic et les etapes de
+     * resolution. Un seul essai par clic : pas de tentatives repetees qui verrouilleraient le compte SMTP.
+     */
+    @PostMapping("/supervision/test-mail")
+    public String testerMail(Authentication authentication, RedirectAttributes redirectAttributes) {
+        if (destinatairesAlertes.isEmpty()) {
+            redirectAttributes.addFlashAttribute("echecMail", CatalogueDiagnostics.diagnostiquer("Illegal address"));
+            redirectAttributes.addFlashAttribute("detailEchecMail",
+                    "Aucun destinataire : renseigner SUPERVISION_ALERTES_EMAILS dans .env.");
+            return "redirect:/supervision";
+        }
+        String destinataire = destinatairesAlertes.get(0);
+        try {
+            mailService.sendMessage("[adminmobile] E-mail de test de la supervision",
+                    "Test demande par " + (authentication != null ? authentication.getName() : "?")
+                            + " depuis la console de supervision.\n\nSi vous lisez ce message, les alertes par e-mail fonctionnent.\n"
+                            + "Expediteur : " + mailService.getExpediteur(), destinataire);
+            redirectAttributes.addFlashAttribute("success", "E-mail de test envoye a " + destinataire
+                    + " (expediteur " + mailService.getExpediteur() + "). Verifiez sa reception.");
+        } catch (RuntimeException e) {
+            StringBuilder texte = new StringBuilder();
+            for (Throwable t = e; t != null; t = t.getCause() == t ? null : t.getCause()) {
+                texte.append(t.getClass().getName()).append(": ").append(t.getMessage()).append(' ');
+            }
+            redirectAttributes.addFlashAttribute("echecMail", CatalogueDiagnostics.diagnostiquer(texte.toString()));
+            Throwable racine = e;
+            while (racine.getCause() != null && racine.getCause() != racine) {
+                racine = racine.getCause();
+            }
+            redirectAttributes.addFlashAttribute("detailEchecMail", "Reponse du serveur : " + racine.getMessage());
+        }
+        return "redirect:/supervision";
     }
 
     @GetMapping("/supervision")
