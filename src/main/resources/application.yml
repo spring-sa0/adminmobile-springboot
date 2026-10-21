@@ -4,7 +4,7 @@ spring:
 
   # Charge le .env local s'il existe (lancement IDE / mvn). En Docker, les variables viennent de env_file.
   config:
-    import: optional:file:.env[.properties]
+    import: optional:file:${ENV_FILE:.env}[.properties]
 
   datasource:
     # Correspond a la ressource JNDI java:app/ds_admin (glassfish-resources.xml) de l'appli d'origine.
@@ -40,14 +40,14 @@ spring:
     # Serveur SMTP. Vide : aucun e-mail ne peut partir (notifications, alertes de supervision).
     host: ${MAIL_HOST:webmail.laposte.tg}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail.smtp.auth: ${MAIL_AUTH:true}
       # Port 587 (soumission) : le serveur exige une connexion chiffree avant l'envoi
       # ("530 Must issue a STARTTLS command first" sinon). MAIL_STARTTLS=false pour un relais sans TLS.
-      mail.smtp.starttls.enable: true
-      mail.smtp.starttls.required: true
+      mail.smtp.starttls.enable: ${MAIL_STARTTLS:true}
+      mail.smtp.starttls.required: ${MAIL_STARTTLS:true}
       # Delais (ms) : un serveur SMTP lent ou injoignable ne doit pas bloquer un ecran ni les alertes.
       mail.smtp.connectiontimeout: 15000
       mail.smtp.timeout: 15000

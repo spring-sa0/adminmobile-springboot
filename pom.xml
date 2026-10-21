@@ -15,7 +15,7 @@
 
     <groupId>tg.laposte</groupId>
     <artifactId>adminmobile</artifactId>
-    <version>1.8.1</version>
+    <version>1.10.0</version>
     <name>adminmobile</name>
     <description>Back-office mobile money (e-poste) - portage Spring Boot / Thymeleaf de l'application JSF legacy</description>
 
@@ -139,8 +139,14 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <!-- Memoire bornee : par defaut la JVM reserve 1/4 de la RAM et echoue au demarrage
+                         ("insufficient memory") sur un poste deja charge. 1 Go suffit aux tests. -->
+                    <argLine>-Xmx1g -XX:+UseSerialGC</argLine>
                     <environmentVariables>
                         <LOG_DIR>${project.build.directory}/logs-tests</LOG_DIR>
+                        <!-- Les tests ne lisent pas le .env local (identifiants, destinataires...) :
+                             meme comportement sur un poste et dans la CI. -->
+                        <ENV_FILE>${project.build.directory}/aucun-env-pour-les-tests</ENV_FILE>
                     </environmentVariables>
                 </configuration>
             </plugin>

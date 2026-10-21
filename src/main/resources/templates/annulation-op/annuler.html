@@ -46,9 +46,14 @@
         </table>
         <nav th:replace="~{fragments/pagination :: pager}"></nav>
 
+        <div class="alert-error" style="margin-top:16px" th:if="${contreEcriture != null}"
+             th:text="|Cette operation est deja annulee (contre-ecriture n° ${contreEcriture}). Une nouvelle annulation extournerait une seconde fois le montant : elle n'est pas proposee.|"></div>
+
+        <!-- Le bouton est desactive des l'envoi : la procedure dure jusqu'a une minute et un second clic
+             lancerait une seconde annulation (incident du 21/10/2026). -->
         <form method="post" th:action="@{/annulation-op/annuler}" style="margin-top:16px"
-              th:if="${!#lists.isEmpty(results)}"
-              onsubmit="return confirm('Voulez-vous confirmer l\'annulation de l\'operation ?');">
+              th:if="${!#lists.isEmpty(results) and contreEcriture == null}"
+              onsubmit="if (!confirm('Voulez-vous confirmer l\'annulation de l\'operation ?')) { return false; } var b = this.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Annulation en cours, patientez (jusqu\'a une minute)...'; return true;">
             <input type="hidden" name="numop" th:value="${numop}"/>
             <div class="form-actions">
                 <button type="submit">Annuler Operation</button>

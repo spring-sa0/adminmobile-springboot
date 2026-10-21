@@ -50,7 +50,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * database. Catches broken templates, unknown properties, missing routes and access-rule gaps.
  */
 @WebMvcTest
-@Import({SecurityConfig.class, ErrorReferenceAttributes.class, PaginationEnBase.class, AllPagesTest.MockServices.class})
+@Import({SecurityConfig.class, ErrorReferenceAttributes.class, PaginationEnBase.class,
+        com.laposte.adminmobile.service.OperationsEnCours.class, AllPagesTest.MockServices.class})
 class AllPagesTest {
 
     private static final String P = "date1=2026-01-01&date2=2026-01-31";
@@ -78,6 +79,9 @@ class AllPagesTest {
 
     @Autowired
     private com.laposte.adminmobile.supervision.EtatSanteService etatSanteService;
+
+    @Autowired
+    private MailService mailService;
 
     /** Etat de sante type : une alerte critique (mot de passe Oracle expire), le reste OK. */
     @org.junit.jupiter.api.BeforeEach
@@ -143,6 +147,7 @@ class AllPagesTest {
             "/parametres/modif-password/generate",
             "/parametres/modif-email", "/parametres/modif-email?telephone=90000000",
             "/parametres/activer-desactiver", "/parametres/activer-desactiver?telephone=90000000",
+            "/parametres/assistance-creation", "/parametres/assistance-creation?telephone=90000000",
             "/parametres/creation-support",
             "/reclamations", "/reclamations/types", "/reclamations/liste", "/reclamations/liste?" + P + "&etat=TOUT",
             "/reclamations/affectation", "/reclamations/cloture",
@@ -316,9 +321,195 @@ class AllPagesTest {
     @Test
     @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
     void annulationWithNonNumericNumopDoesNotCallProcedure() throws Exception {
+        Mockito.clearInvocations(recuElectroniqueService);
         mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "abc"))
                 .andExpect(status().is3xxRedirection());
         verify(recuElectroniqueService, never()).annulopeco(any(), any());
+    }
+
+    // ---- Annulation EcoCCP : protections apres l'incident du 21/10/2026 (103952083) ------------
+
+    @Autowired
+    private com.laposte.adminmobile.service.OperationsEnCours operationsEnCours;
+
+    @Test
+    @WithMockUser(username = "ayekple", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneOperationDejaAnnuleeNEstJamaisReannulee() throws Exception {
+        Mockito.doReturn(104077009L).when(recuElectroniqueService).contreEcritureDe(103952083L);
+
+        mvc.perform(get("/annulation-op/annuler?numop=103952083"))
+                .andExpect(content().string(containsString("deja annulee (contre-ecriture n° 104077009)")))
+                .andExpect(content().string(not(containsString("Annuler Operation</button>"))));
+
+        mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "103952083"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("deja annulee (contre-ecriture n° 104077009)")));
+        verify(recuElectroniqueService, never()).annulopeco(eq(103952083d), any());
+    }
+
+    @Test
+    @WithMockUser(username = "ayekple", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void unDoubleClicPendantLAnnulationEstRefuse() throws Exception {
+        Mockito.doReturn(null).when(recuElectroniqueService).contreEcritureDe(200000001L);
+        assertThat(operationsEnCours.demarrer(AnnulationOpController.ANNULATION, 200000001L)).isTrue(); // 1er clic en cours
+        try {
+            mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "200000001"))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                            .attribute("error", containsString("deja en cours")));
+            verify(recuElectroniqueService, never()).annulopeco(eq(200000001d), any());
+        } finally {
+            operationsEnCours.terminer(AnnulationOpController.ANNULATION, 200000001L);
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "ayekple", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void lAnnulationAfficheLaContreEcritureReellementCreee() throws Exception {
+        // Avant l'appel : pas de contre-ecriture ; apres : celle creee par la procedure.
+        Mockito.doReturn(null, 300000009L).when(recuElectroniqueService).contreEcritureDe(200000002L);
+
+        mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "200000002"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", "Operation 200000002 annulee. Contre-ecriture n° 300000009."));
+        verify(recuElectroniqueService).annulopeco(200000002d, "ayekple");
+        // Le verrou est libere apres le traitement.
+        assertThat(operationsEnCours.demarrer(AnnulationOpController.ANNULATION, 200000002L)).isTrue();
+        operationsEnCours.terminer(AnnulationOpController.ANNULATION, 200000002L);
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneProcedureSansEffetNAffichePlusOk() throws Exception {
+        Mockito.doReturn(null).when(recuElectroniqueService).contreEcritureDe(200000003L);
+
+        mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "200000003"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("n'a pas ete annulee")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void laRestaurationEstControlee() throws Exception {
+        // Numero qui n'est pas une contre-ecriture : refus.
+        Mockito.doReturn(null).when(recuElectroniqueService).operationAnnuleePar(200000004L);
+        mvc.perform(post("/annulation-op/restaurer").with(csrf()).param("numop", "200000004"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("n'est pas (ou plus) une contre-ecriture")));
+
+        // Etat incoherent (operation d'origine encore presente, cas de 103952083) : refus.
+        Mockito.doReturn(103952083L).when(recuElectroniqueService).operationAnnuleePar(104077009L);
+        Mockito.doReturn(true).when(recuElectroniqueService).existe(103952083L);
+        mvc.perform(post("/annulation-op/restaurer").with(csrf()).param("numop", "104077009"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("Etat incoherent")));
+        verify(recuElectroniqueService, never()).restaurerop(eq(104077009d), any());
+
+        // Cas normal : contre-ecriture supprimee et operation remise.
+        Mockito.doReturn(200000005L).when(recuElectroniqueService).operationAnnuleePar(300000010L);
+        Mockito.doReturn(false, true).when(recuElectroniqueService).existe(200000005L);
+        Mockito.doReturn(false).when(recuElectroniqueService).existe(300000010L);
+        mvc.perform(post("/annulation-op/restaurer").with(csrf()).param("numop", "300000010"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", "Operation 200000005 restauree (contre-ecriture 300000010 supprimee)."));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void unDoubleClicSurLAnnulationCashpowerEstRefuse() throws Exception {
+        Mockito.doReturn(List.of(achatCashpower(200000006L))).when(cashpowerService).rechercher(200000006L);
+        assertThat(operationsEnCours.demarrer(AnnulationCashpowerController.ANNULATION, 200000006L)).isTrue();
+        try {
+            mvc.perform(post("/annulation-op/cashpower/annuler").with(csrf()).param("numop", "200000006"))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                            .attribute("error", containsString("deja en cours")));
+            verify(cashpowerService, never()).annuler(eq(200000006L), any());
+        } finally {
+            operationsEnCours.terminer(AnnulationCashpowerController.ANNULATION, 200000006L);
+        }
+    }
+
+    // ---- Assistance a la creation de compte (portage de assist_eposte.fmb) --------------------
+
+    @Autowired
+    private ModifCodesecretService modifCodesecretService;
+
+    private static com.laposte.adminmobile.entities.Users compteEposte(String tel, Date dateCreation) {
+        com.laposte.adminmobile.entities.Users u = new com.laposte.adminmobile.entities.Users();
+        u.setTelephone(tel);
+        u.setNom("KOFFI");
+        u.setPrenom("Ama");
+        u.setMail("ama.koffi@exemple.tg");
+        u.setDateCreation(dateCreation);
+        u.setActif(java.math.BigInteger.ONE);
+        return u;
+    }
+
+    @Test
+    @WithMockUser(username = "agent1", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneInscriptionBloqueeEstDebloqueeEtTracee() throws Exception {
+        Mockito.doReturn(List.of(compteEposte("91000001", null))).when(usersService).userbyTelephone("91000001");
+        mvc.perform(get("/parametres/assistance-creation?telephone=91000001"))
+                .andExpect(content().string(containsString("Non renseignee")))
+                .andExpect(content().string(containsString("Mise a jour</button>")));
+
+        Mockito.doReturn(1).when(usersService).renseignerDateCreation("91000001");
+        Mockito.clearInvocations(modifCodesecretService);
+        mvc.perform(post("/parametres/assistance-creation").with(csrf()).param("telephone", "91000001"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/parametres/assistance-creation?telephone=91000001"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", "Date de creation renseignee pour le compte 91000001."));
+        verify(modifCodesecretService).create(Mockito.argThat(a -> "Assistance creation".equals(a.getMotif())
+                && "agent1".equals(a.getUtilisateur()) && a.getTelephone().longValue() == 91000001L));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneDateDejaRenseigneeNEstPasEcrasee() throws Exception {
+        Date existante = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").parse("12/03/2025 10:15");
+        Mockito.doReturn(List.of(compteEposte("91000002", existante))).when(usersService).userbyTelephone("91000002");
+        mvc.perform(get("/parametres/assistance-creation?telephone=91000002"))
+                .andExpect(content().string(containsString("deja renseignee : aucune mise a jour")))
+                .andExpect(content().string(not(containsString("Mise a jour</button>"))));
+
+        // Double clic ou autre agent : la mise a jour ne modifie rien et le dit.
+        Mockito.doReturn(0).when(usersService).renseignerDateCreation("91000002");
+        mvc.perform(post("/parametres/assistance-creation").with(csrf()).param("telephone", "91000002"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", "La date de creation du compte 91000002 est deja renseignee (12/03/2025 10:15) : aucune modification."));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void unNumeroInconnuEstSignale() throws Exception {
+        Mockito.doReturn(List.of()).when(usersService).userbyTelephone("91000003");
+        mvc.perform(get("/parametres/assistance-creation?telephone=91000003"))
+                .andExpect(content().string(containsString("Aucun compte e-poste pour le numero 91000003")));
+        Mockito.doReturn(0).when(usersService).renseignerDateCreation("91000003");
+        mvc.perform(post("/parametres/assistance-creation").with(csrf()).param("telephone", "91000003"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", "Aucun compte e-poste pour le numero 91000003."));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_UTILISATEUR", "PROFIL_USER", "MARCHAND"})
+    void lAssistanceEstReserveeAuxAdministrateurs() throws Exception {
+        mvc.perform(get("/parametres/assistance-creation")).andExpect(status().isForbidden());
+        mvc.perform(post("/parametres/assistance-creation").with(csrf()).param("telephone", "91000001"))
+                .andExpect(status().isForbidden());
+    }
+
+    /** Le bouton est desactive des l'envoi, pour qu'un second clic ne parte pas. */
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void leBoutonDAnnulationSeDesactiveALEnvoi() throws Exception {
+        Mockito.doReturn(null).when(recuElectroniqueService).contreEcritureDe(200000007L);
+        mvc.perform(get("/annulation-op/annuler?numop=200000007"))
+                .andExpect(content().string(containsString("b.disabled = true")))
+                .andExpect(content().string(containsString("Annulation en cours, patientez")));
     }
 
     @Test
@@ -613,6 +804,19 @@ class AllPagesTest {
         assertThat(groupe.getResoluPar()).isEqualTo("admin1");
     }
 
+    /** Sans destinataire configure (cas des tests), le bouton explique quoi renseigner. */
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void leTestDEnvoiSansDestinataireExpliqueQuoiRenseigner() throws Exception {
+        // Simulation partagee : d'autres tests (notifications de reclamations...) l'ont deja appelee.
+        Mockito.clearInvocations(mailService);
+        mvc.perform(post("/supervision/test-mail").with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("detailEchecMail", containsString("SUPERVISION_ALERTES_EMAILS")));
+        Mockito.verify(mailService, never()).sendMessage(anyString(), anyString(), anyString());
+    }
+
     @Test
     @WithMockUser(authorities = {"ROLE_UTILISATEUR", "PROFIL_USER", "MARCHAND"})
     void seulsLesAdministrateursAccedentALaSupervision() throws Exception {
@@ -648,7 +852,7 @@ class AllPagesTest {
                 assertThat(html).as(template.getFilename()).contains("fragments/export :: boutons");
             }
         }
-        assertThat(listes).isEqualTo(63);
+        assertThat(listes).isEqualTo(64);
     }
 
     @Test

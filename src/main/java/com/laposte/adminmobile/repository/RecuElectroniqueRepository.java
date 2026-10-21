@@ -36,6 +36,20 @@ public interface RecuElectroniqueRepository extends JpaRepository<RecuElectroniq
 
     List<RecuElectronique> findByNumeroOperationOrderByDateOperationDesc(Long numeroOperation);
 
+    // ---- Controles autour des procedures d'annulation / restauration --------------------------
+    // Requetes scalaires : un meme numero peut exister en plusieurs lignes (recu duplique a la source).
+
+    /** Contre-ecriture creee par l'annulation de l'operation (null si l'operation n'est pas annulee). */
+    @Query("SELECT MAX(r.numeroOperation) FROM RecuElectronique r WHERE r.ancienNumOp = :numeroOperation")
+    Long contreEcritureDe(@Param("numeroOperation") Long numeroOperation);
+
+    /** Si le numero est une contre-ecriture : l'operation qu'elle annule (sinon null). */
+    @Query("SELECT MAX(r.ancienNumOp) FROM RecuElectronique r WHERE r.numeroOperation = :numeroOperation")
+    Long operationAnnuleePar(@Param("numeroOperation") Long numeroOperation);
+
+    @Query("SELECT COUNT(r) FROM RecuElectronique r WHERE r.numeroOperation = :numeroOperation")
+    long nombreLignes(@Param("numeroOperation") Long numeroOperation);
+
     /** Port of {@code recupListopByTelephone(ptelephone, date1, date2)}. */
     List<RecuElectronique> findByTelephoneAndDateOperationBetweenOrderByDateOperationDesc(
             String telephone, Date date1, Date date2);

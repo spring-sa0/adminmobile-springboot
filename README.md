@@ -9,7 +9,7 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.8.0 |
+| Version | 1.10.0 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
@@ -345,7 +345,7 @@ src/main/resources/
 | Reclamations / suggestions / support | `ReclamationController`, `TypeReclamationController`, `SuggestionController`, `SupportController` |
 | Releves + JasperReports | `ReleveController`, `ReleveExportController`, `JasperReportService` |
 | Marchand / commissions / recap | `MarchandController`, `MarchandParametrageController`, `CommissionsController`, `RecapController`, `EposteReportController`, `SuggestionsReportController` |
-| Parametres (profil, mot de passe, e-mail, activation) | `ProfilController`, `PasswordResetController`, `EmailUpdateController`, `CompteActivationController` |
+| Parametres (profil, mot de passe, e-mail, activation, assistance a la creation de compte) | `ProfilController`, `PasswordResetController`, `EmailUpdateController`, `CompteActivationController`, `AssistanceCreationController` |
 
 Procedures stockees appelees : `PROCEDURES.ANNUL_OP_ECOCCP(numop, utilisateur)` et
 `PROCEDURES.RESTAURER_OP_ECOCCP(numop, utilisateur)` (annulation / restauration
@@ -421,6 +421,13 @@ fusion.
    `USERS_EPOSTE` (comptes clients mobile), comme l'original, et envoie le nouveau mot de passe
    par SMS. Il ne change pas le mot de passe Oracle utilise pour se connecter au back-office.
    Ces mots de passe sont stockes en clair dans la base (heritage du legacy).
+
+**Assistance a la creation de compte** (`/parametres/assistance-creation`, portage du formulaire
+   Forms `assist_eposte.fmb`) : un compte e-poste sans `DATE_CREATION` est une inscription
+   restee bloquee (11 200 comptes en octobre 2026, a 90 % jamais connectes). L'ecran affiche le
+   compte et, si la date manque, la renseigne (`SYSDATE`) ; mise a jour atomique
+   (`... AND DATE_CREATION IS NULL`), tracee dans `MODIF_CODESECRET` (motif « Assistance
+   creation ») et `audit.log`.
 
 4. **Journal `MODIF_CODESECRET`.** Cette table d'audit n'a pas de vraie cle : `TELEPHONE`,
    mappe en `@Id`, y apparait plusieurs fois. L'entite n'est donc utilisee qu'en insertion

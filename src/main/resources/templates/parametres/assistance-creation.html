@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Assistance creation de compte')}"></head>
+<body>
+<div th:replace="~{fragments/menu :: menu}"></div>
+
+<div class="mainDiv">
+    <h2>Assistance utilisateur e-poste lors de la creation de compte</h2>
+    <!-- Portage du formulaire Oracle Forms assist_eposte.fmb (voir AssistanceCreationController).
+         Admin only (/parametres/**). -->
+    <div class="alert-success" th:if="${success}" th:text="${success}"></div>
+    <div class="alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form method="get" th:action="@{/parametres/assistance-creation}">
+        <div class="form-row">
+            <label for="telephone">Numero telephone</label>
+            <input type="text" id="telephone" name="telephone" th:value="${telephone}" required="required"/>
+        </div>
+        <div class="form-actions">
+            <button type="submit">Rechercher</button>
+        </div>
+    </form>
+
+    <div style="overflow-x:auto;margin-top:20px" th:if="${candidates != null and !#lists.isEmpty(candidates)}">
+        <div th:replace="~{fragments/export :: boutons}"></div>
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Prenom</th>
+                <th>Telephone</th>
+                <th>Mail</th>
+                <th>Date de derniere connexion</th>
+                <th>Date de creation</th>
+                <th>Etat du compte</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${candidates}">
+                <td th:text="${item.nom}"></td>
+                <td th:text="${item.prenom}"></td>
+                <td th:text="${item.telephone}"></td>
+                <td th:text="${item.mail}"></td>
+                <td th:text="${item.dateconnexion != null ? #dates.format(item.dateconnexion, 'dd/MM/yyyy HH:mm:ss') : 'Jamais connecte'}"></td>
+                <td th:text="${item.dateCreation != null ? #dates.format(item.dateCreation, 'dd/MM/yyyy HH:mm:ss') : 'Non renseignee'}"></td>
+                <td th:text="${item.actif == null ? '' : (item.actif.intValue() == 0 ? 'Actif (0)' : (item.actif.intValue() == 2 ? 'Desactive (2)' : 'Code ' + item.actif))}"></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div th:if="${dateCreationManquante}" style="margin-top:16px">
+            <p>La date de creation de ce compte n'est pas renseignee : l'inscription est restee bloquee.
+                La mise a jour renseigne la date de creation avec la date et l'heure actuelles.</p>
+            <form method="post" th:action="@{/parametres/assistance-creation}"
+                  onsubmit="if (!confirm('Renseigner la date de creation de ce compte ?')) { return false; } var b = this.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Mise a jour en cours...'; return true;">
+                <input type="hidden" name="telephone" th:value="${telephone}"/>
+                <div class="form-actions">
+                    <button type="submit">Mise a jour</button>
+                </div>
+            </form>
+        </div>
+        <p class="sup-meta" style="margin-top:12px" th:if="${dateCreationManquante == false}">
+            La date de creation est deja renseignee : aucune mise a jour n'est necessaire.</p>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

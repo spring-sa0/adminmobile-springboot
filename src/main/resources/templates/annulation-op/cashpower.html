@@ -61,7 +61,7 @@
 
         <form method="post" th:action="@{/annulation-op/cashpower/annuler}" style="margin-top:16px"
               th:if="${annulationExistante == null}"
-              onsubmit="return confirm('Etes-vous sur(e) de vouloir annuler cette operation ? Les ecritures inverses seront passees en comptabilite.');">
+              onsubmit="if (!confirm('Etes-vous sur(e) de vouloir annuler cette operation ? Les ecritures inverses seront passees en comptabilite.')) { return false; } var b = this.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Annulation en cours, patientez...'; return true;">
             <input type="hidden" name="numop" th:value="${numop}"/>
             <div class="form-actions">
                 <button type="submit">Annuler l'operation</button>

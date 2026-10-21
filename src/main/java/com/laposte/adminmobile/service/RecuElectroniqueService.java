@@ -172,6 +172,25 @@ public class RecuElectroniqueService {
         query.execute();
     }
 
+    /**
+     * Numero de la contre-ecriture si l'operation a deja ete annulee (la procedure d'annulation
+     * cree un recu "ANNUL ..." portant ANCIEN_NUM_OP = numero annule ; la restauration le supprime).
+     * Null si l'operation n'est pas annulee.
+     */
+    public Long contreEcritureDe(long numeroOperation) {
+        return recuElectroniqueRepository.contreEcritureDe(numeroOperation);
+    }
+
+    /** Si le numero est une contre-ecriture d'annulation : l'operation qu'elle annule, sinon null. */
+    public Long operationAnnuleePar(long numeroOperation) {
+        return recuElectroniqueRepository.operationAnnuleePar(numeroOperation);
+    }
+
+    /** Vrai si le numero existe encore dans RECU_ELECTRONIQUE. */
+    public boolean existe(long numeroOperation) {
+        return recuElectroniqueRepository.nombreLignes(numeroOperation) > 0;
+    }
+
     /** Port of {@code restaurerop(numop, login)}: calls {@code procedures.restaurer_op_ecoccp(numop, login)}. */
     @Transactional
     public void restaurerop(Double numop, String login) {
