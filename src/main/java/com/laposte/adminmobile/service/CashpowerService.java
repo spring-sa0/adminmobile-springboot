@@ -33,11 +33,41 @@ public class CashpowerService {
             "SELECT NUMERO_OPERATION, NOMPRENOM, NUMEROCOMPTEUR, MONTANT, DATE_ACHAT, TELEPHONE, NUMERO_COMPTE, "
                     + "STATUT, NUMERO_RECU, KILOWATEUR FROM SPT.CASHPOWER WHERE NUMERO_OPERATION = ? ORDER BY DATE_ACHAT DESC";
 
-    /** Meme test que la procedure (etape 2) pour signaler une annulation existante avant de proposer le bouton. */
+    /**
+     * Meme test que la procedure (etape 2) pour signaler une annulation existante avant de proposer le bouton.
+     * LIBELLE_ECRITURE n'est pas indexee : parcours complet de SPT.MOUVEMENT (~40 s), comme la procedure.
+     */
     private static final String SQL_ANNULATION_EXISTANTE =
             "SELECT MAX(NUMERO_OPERATION) FROM SPT.MOUVEMENT WHERE LIBELLE_ECRITURE = ?";
 
     private static final String APPEL_ANNULATION = "{ call PROCEDURES.P_ANNULER_OPERATION(?, ?, ?, ?) }";
+
+    /**
+     * Statut d'un achat annule (le client est rembourse par les ecritures inverses).
+     * P_ANNULER_OPERATION ne touche pas a SPT.CASHPOWER : sans cette mise a jour, un achat annule
+     * gardait son statut (FAILED en general). Les procedures d'achat (CASH_POWER_NEW / _COM) ne
+     * modifient le statut que pendant l'achat ; LISTE_CASHPOWER_VERIFY ne reprend que les achats en
+     * erreur 409 des 6 dernieres minutes.
+     */
+    public static final String STATUT_REMBOURSE = "REMBOURSE";
+
+    private static final String SQL_MARQUER_REMBOURSE =
+            "UPDATE SPT.CASHPOWER SET STATUT = '" + STATUT_REMBOURSE + "'"
+                    + " WHERE NUMERO_OPERATION = ? AND (STATUT IS NULL OR STATUT <> '" + STATUT_REMBOURSE + "')";
+
+    /**
+     * Tous les achats CashPower deja annules (ecritures "ANNULATION OP n" dans SPT.MOUVEMENT) qui
+     * n'ont pas encore le statut rembourse. Meme requete que sql/1.12.0-remboursement-cashpower.sql.
+     * LIBELLE_ECRITURE n'est pas indexee : un seul parcours de SPT.MOUVEMENT joint a CASHPOWER
+     * (environ une minute).
+     */
+    private static final String SQL_MARQUER_TOUS_REMBOURSES =
+            "MERGE INTO SPT.CASHPOWER cp"
+                    + " USING (SELECT DISTINCT TO_NUMBER(REGEXP_SUBSTR(libelle_ecriture, '[0-9]+$')) AS numero_operation"
+                    + "          FROM SPT.MOUVEMENT WHERE libelle_ecriture LIKE 'ANNULATION OP %') a"
+                    + " ON (cp.numero_operation = a.numero_operation)"
+                    + " WHEN MATCHED THEN UPDATE SET cp.statut = '" + STATUT_REMBOURSE + "'"
+                    + " WHERE cp.statut IS NULL OR cp.statut <> '" + STATUT_REMBOURSE + "'";
 
     /**
      * Annulations passees par P_ANNULER_OPERATION sur une periode : une ligne par annulation
@@ -120,6 +150,22 @@ public class CashpowerService {
             BigDecimal code = cs.getBigDecimal(3);
             return new ResultatAnnulation(code == null ? -1 : code.intValue(), cs.getString(4));
         });
+    }
+
+    /**
+     * Passe au statut {@link #STATUT_REMBOURSE} les achats CashPower portant ce numero (validation
+     * immediate, comme la procedure). Renvoie le nombre de lignes modifiees (0 si deja fait).
+     */
+    public int marquerRembourse(long numeroOperation) {
+        return jdbcTemplate.update(SQL_MARQUER_REMBOURSE, numeroOperation);
+    }
+
+    /**
+     * Passe au statut {@link #STATUT_REMBOURSE} tous les achats CashPower deja annules qui ne l'ont
+     * pas encore (validation immediate). Renvoie le nombre de lignes modifiees.
+     */
+    public int marquerTousRembourses() {
+        return jdbcTemplate.update(SQL_MARQUER_TOUS_REMBOURSES);
     }
 
     /** Filtre de la liste des annulations. */

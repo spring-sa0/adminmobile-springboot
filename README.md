@@ -9,7 +9,7 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.11.0 |
+| Version | 1.12.0 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
@@ -435,6 +435,17 @@ fusion.
    `FAILED` echouee, `PENDING` en attente, `INITIATED` initiee). Liste classee par application,
    statut puis date, avec un recapitulatif nombre / montant. Les achats au guichet
    (`ENCAISSEMENTS_CASH_POWER*`) ne sont pas concernes.
+
+**Statut d'un achat CashPower annule** : `P_ANNULER_OPERATION` ne modifie pas `SPT.CASHPOWER`.
+   Depuis la 1.12.0, l'ecran d'annulation passe l'achat a `STATUT = 'REMBOURSE'` juste apres
+   l'annulation, et rattrape le statut si la procedure repond « deja annulee ». Si cette mise a
+   jour echoue, l'annulation comptable reste faite et le message le signale.
+   Pour les annulations anterieures (ou faites par le formulaire Forms) : bouton « Mettre a jour
+   tous les statuts » en bas de l'ecran (tous les achats annules en une fois, environ une
+   minute, relancable sans risque), bouton « Passer le statut a REMBOURSE » pour une seule
+   operation, ou script equivalent `sql/1.12.0-remboursement-cashpower.sql`.
+   `LIBELLE_ECRITURE` n'etant pas indexee, verifier une annulation dans `MOUVEMENT` prend
+   environ 40 s (comme le controle « deja annulee » de la procedure elle-meme).
 
 4. **Journal `MODIF_CODESECRET`.** Cette table d'audit n'a pas de vraie cle : `TELEPHONE`,
    mappe en `@Id`, y apparait plusieurs fois. L'entite n'est donc utilisee qu'en insertion

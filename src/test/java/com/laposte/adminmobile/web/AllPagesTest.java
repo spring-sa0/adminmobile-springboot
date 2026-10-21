@@ -28,6 +28,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
@@ -740,6 +741,7 @@ class AllPagesTest {
         Mockito.doReturn(null).when(cashpowerService).annulationExistante(103527700L);
         Mockito.doReturn(new CashpowerService.ResultatAnnulation(0, "OK - Annulation effectuee avec succes. Numero d'annulation : 103600001"))
                 .when(cashpowerService).annuler(103527700L, "agent1");
+        Mockito.doReturn(1).when(cashpowerService).marquerRembourse(103527700L);
 
         mvc.perform(get("/annulation-op/cashpower?numop=103527700"))
                 .andExpect(status().isOk())
@@ -750,8 +752,138 @@ class AllPagesTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/annulation-op/cashpower?numop=103527700"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
-                        .attribute("success", "0 - OK - Annulation effectuee avec succes. Numero d'annulation : 103600001"));
+                        .attribute("success", "0 - OK - Annulation effectuee avec succes. Numero d'annulation : 103600001"
+                                + " Achat passe au statut REMBOURSE."));
         verify(cashpowerService).annuler(103527700L, "agent1");
+        verify(cashpowerService).marquerRembourse(103527700L);
+    }
+
+    /** Operation deja annulee (formulaire Forms, ancienne version) : la procedure renvoie 2, le statut est rattrape. */
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneAnnulationDejaFaiteRattrapeLeStatut() throws Exception {
+        Mockito.doReturn(List.of(achatCashpower(103527710L))).when(cashpowerService).rechercher(103527710L);
+        Mockito.doReturn(new CashpowerService.ResultatAnnulation(2, "NOK - Operation deja annulee"))
+                .when(cashpowerService).annuler(Mockito.eq(103527710L), any());
+        Mockito.doReturn(1).when(cashpowerService).marquerRembourse(103527710L);
+
+        mvc.perform(post("/annulation-op/cashpower/annuler").with(csrf()).param("numop", "103527710"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", "2 - NOK - Operation deja annulee Achat passe au statut REMBOURSE."));
+    }
+
+    /** Si la mise a jour du statut echoue, l'annulation (deja validee par la procedure) reste signalee comme faite. */
+    @Test
+    @WithMockUser(username = "agent1", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void unEchecDuStatutNeMasquePasLAnnulation() throws Exception {
+        Mockito.doReturn(List.of(achatCashpower(103527711L))).when(cashpowerService).rechercher(103527711L);
+        Mockito.doReturn(new CashpowerService.ResultatAnnulation(0, "OK - Annulation effectuee avec succes. Numero d'annulation : 103600011"))
+                .when(cashpowerService).annuler(103527711L, "agent1");
+        Mockito.doThrow(new org.springframework.dao.DataAccessResourceFailureException("ORA-00054"))
+                .when(cashpowerService).marquerRembourse(103527711L);
+
+        mvc.perform(post("/annulation-op/cashpower/annuler").with(csrf()).param("numop", "103527711"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", allOf(containsString("Numero d'annulation : 103600011"),
+                                containsString("ECHEC de la mise a jour du statut"))));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void leStatutDUneAncienneAnnulationPeutEtreRattrape() throws Exception {
+        Mockito.doReturn(List.of(achatCashpower(103527712L))).when(cashpowerService).rechercher(103527712L);
+        Mockito.doReturn(103600012L).when(cashpowerService).annulationExistante(103527712L);
+        Mockito.doReturn(1).when(cashpowerService).marquerRembourse(103527712L);
+
+        mvc.perform(get("/annulation-op/cashpower?numop=103527712"))
+                .andExpect(content().string(containsString("Passer le statut a REMBOURSE")))
+                .andExpect(content().string(not(containsString("Annuler l'operation"))));
+        mvc.perform(post("/annulation-op/cashpower/statut").with(csrf()).param("numop", "103527712"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", "Operation 103527712 deja annulee. Achat passe au statut REMBOURSE."));
+    }
+
+    /** Achat deja rembourse : plus de bouton de rattrapage. */
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void unAchatRembourseNeProposePlusDeRattrapage() throws Exception {
+        Mockito.doReturn(List.of(new CashpowerService.OperationCashpower(103527714L, "KOFFI AMA 01234567890",
+                new java.math.BigDecimal("5000"), new Date(), "22890123456", "6310319794001000", "01234567890",
+                "REMBOURSE", "R-1", "12.5"))).when(cashpowerService).rechercher(103527714L);
+        Mockito.doReturn(103600014L).when(cashpowerService).annulationExistante(103527714L);
+
+        mvc.perform(get("/annulation-op/cashpower?numop=103527714"))
+                .andExpect(content().string(containsString("REMBOURSE (annulee)")))
+                .andExpect(content().string(not(containsString("Passer le statut a REMBOURSE"))));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void leStatutNEstPasChangeSansAnnulation() throws Exception {
+        Mockito.doReturn(null).when(cashpowerService).annulationExistante(103527713L);
+
+        mvc.perform(post("/annulation-op/cashpower/statut").with(csrf()).param("numop", "103527713"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("n'a pas ete annulee")));
+        verify(cashpowerService, never()).marquerRembourse(103527713L);
+    }
+
+    // ---- Mise a jour en une fois du statut de tous les achats rembourses ----------------------
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void tousLesAchatsRemboursesPassentAuStatutRembourse() throws Exception {
+        Mockito.doReturn(152).when(cashpowerService).marquerTousRembourses();
+
+        mvc.perform(get("/annulation-op/cashpower"))
+                .andExpect(content().string(containsString("Mettre a jour tous les statuts")));
+        mvc.perform(post("/annulation-op/cashpower/statuts").with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/annulation-op/cashpower"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", "152 achat(s) CashPower passe(s) au statut REMBOURSE."));
+
+        Mockito.doReturn(0).when(cashpowerService).marquerTousRembourses();
+        mvc.perform(post("/annulation-op/cashpower/statuts").with(csrf()))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", containsString("Aucun achat a mettre a jour")));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneSecondeMiseAJourDesStatutsEnParalleleEstRefusee() throws Exception {
+        Mockito.clearInvocations(cashpowerService);
+        assertThat(operationsEnCours.demarrer(AnnulationCashpowerController.MISE_A_JOUR_STATUTS, 0)).isTrue();
+        try {
+            mvc.perform(post("/annulation-op/cashpower/statuts").with(csrf()))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                            .attribute("error", containsString("deja en cours")));
+            verify(cashpowerService, never()).marquerTousRembourses();
+        } finally {
+            operationsEnCours.terminer(AnnulationCashpowerController.MISE_A_JOUR_STATUTS, 0);
+        }
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void unEchecDeLaMiseAJourDesStatutsEstSignaleEtLibereLeVerrou() throws Exception {
+        Mockito.doThrow(new org.springframework.dao.QueryTimeoutException("ORA-01013"))
+                .when(cashpowerService).marquerTousRembourses();
+        try {
+            mvc.perform(post("/annulation-op/cashpower/statuts").with(csrf()))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                            .attribute("error", containsString("ECHEC de la mise a jour des statuts")));
+            assertThat(operationsEnCours.demarrer(AnnulationCashpowerController.MISE_A_JOUR_STATUTS, 0)).isTrue();
+            operationsEnCours.terminer(AnnulationCashpowerController.MISE_A_JOUR_STATUTS, 0);
+        } finally {
+            Mockito.doReturn(0).when(cashpowerService).marquerTousRembourses();
+        }
+    }
+
+    @Test
+    @WithMockUser(authorities = {"PROFIL_USER", "PROFIL_MENU"})
+    void laMiseAJourDesStatutsEstReserveeAuxAdministrateurs() throws Exception {
+        mvc.perform(post("/annulation-op/cashpower/statuts").with(csrf())).andExpect(status().isForbidden());
     }
 
     @Test
@@ -764,6 +896,7 @@ class AllPagesTest {
         mvc.perform(post("/annulation-op/cashpower/annuler").with(csrf()).param("numop", "103527701"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
                         .attribute("error", "1 - NOK - Aucune ecriture trouvee pour l'operation 103527701"));
+        verify(cashpowerService, never()).marquerRembourse(103527701L);
     }
 
     @Test

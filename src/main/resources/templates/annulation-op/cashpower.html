@@ -51,13 +51,23 @@
                 <td th:text="${item.numeroCompte}"></td>
                 <td th:text="${item.kilowatt}"></td>
                 <td th:text="${item.numeroRecu}"></td>
-                <td th:text="${item.statut}"></td>
+                <td th:text="${item.statut == 'REMBOURSE' ? 'REMBOURSE (annulee)' : item.statut}"></td>
             </tr>
             </tbody>
         </table>
 
         <div class="alert-error" style="margin-top:16px" th:if="${annulationExistante != null}"
              th:text="|Cette operation est deja annulee. Numero d'annulation : ${annulationExistante}|"></div>
+
+        <form method="post" th:action="@{/annulation-op/cashpower/statut}" style="margin-top:16px"
+              th:if="${statutARattraper}"
+              onsubmit="var b = this.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Mise a jour en cours, patientez...'; return true;">
+            <p>L'achat n'a pas encore le statut rembourse (annulation faite avant la mise a jour automatique du statut).</p>
+            <input type="hidden" name="numop" th:value="${numop}"/>
+            <div class="form-actions">
+                <button type="submit">Passer le statut a REMBOURSE</button>
+            </div>
+        </form>
 
         <form method="post" th:action="@{/annulation-op/cashpower/annuler}" style="margin-top:16px"
               th:if="${annulationExistante == null}"
@@ -68,6 +78,17 @@
             </div>
         </form>
     </div>
+
+    <form method="post" th:action="@{/annulation-op/cashpower/statuts}" style="margin-top:32px"
+          onsubmit="if (!confirm('Passer au statut REMBOURSE tous les achats CashPower deja annules ? (environ une minute)')) { return false; } var b = this.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Mise a jour en cours, patientez (environ une minute)...'; return true;">
+        <h3>Statut des achats deja rembourses</h3>
+        <p>Passe au statut REMBOURSE tous les achats CashPower qui ont ete annules (par cet ecran ou par le
+            formulaire Oracle Forms) et qui ne l'ont pas encore. Sans effet sur la comptabilite ; peut etre relance
+            sans risque.</p>
+        <div class="form-actions">
+            <button type="submit">Mettre a jour tous les statuts</button>
+        </div>
+    </form>
 </div>
 
 <div th:replace="~{fragments/footer :: footer}"></div>

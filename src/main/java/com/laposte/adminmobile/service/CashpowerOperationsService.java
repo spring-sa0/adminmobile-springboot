@@ -19,7 +19,8 @@ import java.util.Map;
  * Valeurs rencontrees en base (octobre 2026) :
  * <ul>
  *   <li>APP_SOURCE : EPOSTE, MARCHAND, OMNIPOST, et vide pour les achats d'avant fin juillet 2025 ;</li>
- *   <li>STATUT : SUCCESS, FAILED, PENDING, INITIATED, et vide pour les memes achats anciens.</li>
+ *   <li>STATUT : SUCCESS, FAILED, PENDING, INITIATED, et vide pour les memes achats anciens ;
+ *       REMBOURSE pour un achat annule ({@link CashpowerService#STATUT_REMBOURSE}).</li>
  * </ul>
  * La liste est classee par application (E-Poste, Marchand, autres) puis par statut puis par date.
  * La table est petite (~50 000 lignes, pas d'index sur DATE_ACHAT) : parcours complet de quelques
@@ -36,7 +37,7 @@ public class CashpowerOperationsService {
     private static final String TRI =
             " ORDER BY CASE APP_SOURCE WHEN 'EPOSTE' THEN 1 WHEN 'MARCHAND' THEN 2 ELSE 3 END,"
                     + " CASE STATUT WHEN 'SUCCESS' THEN 1 WHEN 'FAILED' THEN 2 WHEN 'PENDING' THEN 3"
-                    + " WHEN 'INITIATED' THEN 4 ELSE 5 END, DATE_ACHAT";
+                    + " WHEN 'INITIATED' THEN 4 WHEN 'REMBOURSE' THEN 5 ELSE 6 END, DATE_ACHAT";
 
     /** Application d'origine de l'achat. */
     public enum Application {
@@ -57,11 +58,12 @@ public class CashpowerOperationsService {
     public enum Statut {
         TOUS(""),
         ABOUTIES(" AND STATUT = 'SUCCESS'"),
-        /** Echouees, en attente, initiees : tout statut renseigne autre que SUCCESS. */
-        NON_ABOUTIES(" AND STATUT <> 'SUCCESS'"),
+        /** Echouees, en attente, initiees : tout statut renseigne autre que SUCCESS et REMBOURSE. */
+        NON_ABOUTIES(" AND STATUT NOT IN ('SUCCESS', 'REMBOURSE')"),
         ECHOUEES(" AND STATUT = 'FAILED'"),
         EN_ATTENTE(" AND STATUT = 'PENDING'"),
         INITIEES(" AND STATUT = 'INITIATED'"),
+        REMBOURSEES(" AND STATUT = 'REMBOURSE'"),
         NON_RENSEIGNE(" AND STATUT IS NULL");
 
         private final String condition;
@@ -130,6 +132,7 @@ public class CashpowerOperationsService {
             case "FAILED" -> "Echouee";
             case "PENDING" -> "En attente";
             case "INITIATED" -> "Initiee";
+            case "REMBOURSE" -> "Remboursee";
             default -> statut;
         };
     }
