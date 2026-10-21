@@ -66,6 +66,12 @@ public class UsersService {
         entityManager.refresh(a);
     }
 
+    /** Voir {@link UsersRepository#renseignerDateCreation} : 1 si la date a ete renseignee, 0 sinon. */
+    @Transactional
+    public int renseignerDateCreation(String tel) {
+        return usersRepository.renseignerDateCreation(tel);
+    }
+
     @Transactional
     public int reinitPass(String tel, String pass) {
         return usersRepository.reinitPass(tel, pass);

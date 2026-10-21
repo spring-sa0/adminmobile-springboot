@@ -147,6 +147,7 @@ class AllPagesTest {
             "/parametres/modif-password/generate",
             "/parametres/modif-email", "/parametres/modif-email?telephone=90000000",
             "/parametres/activer-desactiver", "/parametres/activer-desactiver?telephone=90000000",
+            "/parametres/assistance-creation", "/parametres/assistance-creation?telephone=90000000",
             "/parametres/creation-support",
             "/reclamations", "/reclamations/types", "/reclamations/liste", "/reclamations/liste?" + P + "&etat=TOUT",
             "/reclamations/affectation", "/reclamations/cloture",
@@ -428,6 +429,77 @@ class AllPagesTest {
         } finally {
             operationsEnCours.terminer(AnnulationCashpowerController.ANNULATION, 200000006L);
         }
+    }
+
+    // ---- Assistance a la creation de compte (portage de assist_eposte.fmb) --------------------
+
+    @Autowired
+    private ModifCodesecretService modifCodesecretService;
+
+    private static com.laposte.adminmobile.entities.Users compteEposte(String tel, Date dateCreation) {
+        com.laposte.adminmobile.entities.Users u = new com.laposte.adminmobile.entities.Users();
+        u.setTelephone(tel);
+        u.setNom("KOFFI");
+        u.setPrenom("Ama");
+        u.setMail("ama.koffi@exemple.tg");
+        u.setDateCreation(dateCreation);
+        u.setActif(java.math.BigInteger.ONE);
+        return u;
+    }
+
+    @Test
+    @WithMockUser(username = "agent1", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneInscriptionBloqueeEstDebloqueeEtTracee() throws Exception {
+        Mockito.doReturn(List.of(compteEposte("91000001", null))).when(usersService).userbyTelephone("91000001");
+        mvc.perform(get("/parametres/assistance-creation?telephone=91000001"))
+                .andExpect(content().string(containsString("Non renseignee")))
+                .andExpect(content().string(containsString("Mise a jour</button>")));
+
+        Mockito.doReturn(1).when(usersService).renseignerDateCreation("91000001");
+        Mockito.clearInvocations(modifCodesecretService);
+        mvc.perform(post("/parametres/assistance-creation").with(csrf()).param("telephone", "91000001"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/parametres/assistance-creation?telephone=91000001"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", "Date de creation renseignee pour le compte 91000001."));
+        verify(modifCodesecretService).create(Mockito.argThat(a -> "Assistance creation".equals(a.getMotif())
+                && "agent1".equals(a.getUtilisateur()) && a.getTelephone().longValue() == 91000001L));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneDateDejaRenseigneeNEstPasEcrasee() throws Exception {
+        Date existante = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm").parse("12/03/2025 10:15");
+        Mockito.doReturn(List.of(compteEposte("91000002", existante))).when(usersService).userbyTelephone("91000002");
+        mvc.perform(get("/parametres/assistance-creation?telephone=91000002"))
+                .andExpect(content().string(containsString("deja renseignee : aucune mise a jour")))
+                .andExpect(content().string(not(containsString("Mise a jour</button>"))));
+
+        // Double clic ou autre agent : la mise a jour ne modifie rien et le dit.
+        Mockito.doReturn(0).when(usersService).renseignerDateCreation("91000002");
+        mvc.perform(post("/parametres/assistance-creation").with(csrf()).param("telephone", "91000002"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", "La date de creation du compte 91000002 est deja renseignee (12/03/2025 10:15) : aucune modification."));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void unNumeroInconnuEstSignale() throws Exception {
+        Mockito.doReturn(List.of()).when(usersService).userbyTelephone("91000003");
+        mvc.perform(get("/parametres/assistance-creation?telephone=91000003"))
+                .andExpect(content().string(containsString("Aucun compte e-poste pour le numero 91000003")));
+        Mockito.doReturn(0).when(usersService).renseignerDateCreation("91000003");
+        mvc.perform(post("/parametres/assistance-creation").with(csrf()).param("telephone", "91000003"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", "Aucun compte e-poste pour le numero 91000003."));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_UTILISATEUR", "PROFIL_USER", "MARCHAND"})
+    void lAssistanceEstReserveeAuxAdministrateurs() throws Exception {
+        mvc.perform(get("/parametres/assistance-creation")).andExpect(status().isForbidden());
+        mvc.perform(post("/parametres/assistance-creation").with(csrf()).param("telephone", "91000001"))
+                .andExpect(status().isForbidden());
     }
 
     /** Le bouton est desactive des l'envoi, pour qu'un second clic ne parte pas. */
@@ -780,7 +852,7 @@ class AllPagesTest {
                 assertThat(html).as(template.getFilename()).contains("fragments/export :: boutons");
             }
         }
-        assertThat(listes).isEqualTo(63);
+        assertThat(listes).isEqualTo(64);
     }
 
     @Test

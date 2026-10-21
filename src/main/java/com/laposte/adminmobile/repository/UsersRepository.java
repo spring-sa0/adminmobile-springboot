@@ -26,6 +26,17 @@ public interface UsersRepository extends JpaRepository<Users, String> {
     List<Users> findByTelephone(String telephone);
 
     /** Port of {@code usersdao.reinitPass(tel, pass)}. */
+    /**
+     * Assistance a la creation de compte (formulaire Forms assist_eposte.fmb) : renseigne la date de
+     * creation d'un compte qui n'en a pas (inscription restee bloquee). La condition IS NULL rend
+     * l'operation sure en cas de double clic : renvoie 0 si la date est deja renseignee ou si le
+     * compte n'existe pas.
+     */
+    @Modifying
+    @Query(value = "UPDATE USERS_EPOSTE SET DATE_CREATION = SYSDATE WHERE TELEPHONE = :tel AND DATE_CREATION IS NULL",
+            nativeQuery = true)
+    int renseignerDateCreation(@Param("tel") String tel);
+
     @Modifying
     @Query(value = "UPDATE USERS_EPOSTE SET CODE_SECRET = :pass, ERR_CODE = 0, CODE_PASSE = 3000 WHERE TELEPHONE = :tel",
             nativeQuery = true)
