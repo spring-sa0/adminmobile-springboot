@@ -50,7 +50,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * database. Catches broken templates, unknown properties, missing routes and access-rule gaps.
  */
 @WebMvcTest
-@Import({SecurityConfig.class, ErrorReferenceAttributes.class, PaginationEnBase.class, AllPagesTest.MockServices.class})
+@Import({SecurityConfig.class, ErrorReferenceAttributes.class, PaginationEnBase.class,
+        com.laposte.adminmobile.service.OperationsEnCours.class, AllPagesTest.MockServices.class})
 class AllPagesTest {
 
     private static final String P = "date1=2026-01-01&date2=2026-01-31";
@@ -319,9 +320,124 @@ class AllPagesTest {
     @Test
     @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
     void annulationWithNonNumericNumopDoesNotCallProcedure() throws Exception {
+        Mockito.clearInvocations(recuElectroniqueService);
         mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "abc"))
                 .andExpect(status().is3xxRedirection());
         verify(recuElectroniqueService, never()).annulopeco(any(), any());
+    }
+
+    // ---- Annulation EcoCCP : protections apres l'incident du 21/10/2026 (103952083) ------------
+
+    @Autowired
+    private com.laposte.adminmobile.service.OperationsEnCours operationsEnCours;
+
+    @Test
+    @WithMockUser(username = "ayekple", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneOperationDejaAnnuleeNEstJamaisReannulee() throws Exception {
+        Mockito.doReturn(104077009L).when(recuElectroniqueService).contreEcritureDe(103952083L);
+
+        mvc.perform(get("/annulation-op/annuler?numop=103952083"))
+                .andExpect(content().string(containsString("deja annulee (contre-ecriture n° 104077009)")))
+                .andExpect(content().string(not(containsString("Annuler Operation</button>"))));
+
+        mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "103952083"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("deja annulee (contre-ecriture n° 104077009)")));
+        verify(recuElectroniqueService, never()).annulopeco(eq(103952083d), any());
+    }
+
+    @Test
+    @WithMockUser(username = "ayekple", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void unDoubleClicPendantLAnnulationEstRefuse() throws Exception {
+        Mockito.doReturn(null).when(recuElectroniqueService).contreEcritureDe(200000001L);
+        assertThat(operationsEnCours.demarrer(AnnulationOpController.ANNULATION, 200000001L)).isTrue(); // 1er clic en cours
+        try {
+            mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "200000001"))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                            .attribute("error", containsString("deja en cours")));
+            verify(recuElectroniqueService, never()).annulopeco(eq(200000001d), any());
+        } finally {
+            operationsEnCours.terminer(AnnulationOpController.ANNULATION, 200000001L);
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "ayekple", authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void lAnnulationAfficheLaContreEcritureReellementCreee() throws Exception {
+        // Avant l'appel : pas de contre-ecriture ; apres : celle creee par la procedure.
+        Mockito.doReturn(null, 300000009L).when(recuElectroniqueService).contreEcritureDe(200000002L);
+
+        mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "200000002"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", "Operation 200000002 annulee. Contre-ecriture n° 300000009."));
+        verify(recuElectroniqueService).annulopeco(200000002d, "ayekple");
+        // Le verrou est libere apres le traitement.
+        assertThat(operationsEnCours.demarrer(AnnulationOpController.ANNULATION, 200000002L)).isTrue();
+        operationsEnCours.terminer(AnnulationOpController.ANNULATION, 200000002L);
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void uneProcedureSansEffetNAffichePlusOk() throws Exception {
+        Mockito.doReturn(null).when(recuElectroniqueService).contreEcritureDe(200000003L);
+
+        mvc.perform(post("/annulation-op/annuler").with(csrf()).param("numop", "200000003"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("n'a pas ete annulee")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void laRestaurationEstControlee() throws Exception {
+        // Numero qui n'est pas une contre-ecriture : refus.
+        Mockito.doReturn(null).when(recuElectroniqueService).operationAnnuleePar(200000004L);
+        mvc.perform(post("/annulation-op/restaurer").with(csrf()).param("numop", "200000004"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("n'est pas (ou plus) une contre-ecriture")));
+
+        // Etat incoherent (operation d'origine encore presente, cas de 103952083) : refus.
+        Mockito.doReturn(103952083L).when(recuElectroniqueService).operationAnnuleePar(104077009L);
+        Mockito.doReturn(true).when(recuElectroniqueService).existe(103952083L);
+        mvc.perform(post("/annulation-op/restaurer").with(csrf()).param("numop", "104077009"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("error", containsString("Etat incoherent")));
+        verify(recuElectroniqueService, never()).restaurerop(eq(104077009d), any());
+
+        // Cas normal : contre-ecriture supprimee et operation remise.
+        Mockito.doReturn(200000005L).when(recuElectroniqueService).operationAnnuleePar(300000010L);
+        Mockito.doReturn(false, true).when(recuElectroniqueService).existe(200000005L);
+        Mockito.doReturn(false).when(recuElectroniqueService).existe(300000010L);
+        mvc.perform(post("/annulation-op/restaurer").with(csrf()).param("numop", "300000010"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attribute("success", "Operation 200000005 restauree (contre-ecriture 300000010 supprimee)."));
+    }
+
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void unDoubleClicSurLAnnulationCashpowerEstRefuse() throws Exception {
+        Mockito.doReturn(List.of(achatCashpower(200000006L))).when(cashpowerService).rechercher(200000006L);
+        assertThat(operationsEnCours.demarrer(AnnulationCashpowerController.ANNULATION, 200000006L)).isTrue();
+        try {
+            mvc.perform(post("/annulation-op/cashpower/annuler").with(csrf()).param("numop", "200000006"))
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                            .attribute("error", containsString("deja en cours")));
+            verify(cashpowerService, never()).annuler(eq(200000006L), any());
+        } finally {
+            operationsEnCours.terminer(AnnulationCashpowerController.ANNULATION, 200000006L);
+        }
+    }
+
+    /** Le bouton est desactive des l'envoi, pour qu'un second clic ne parte pas. */
+    @Test
+    @WithMockUser(authorities = {"ROLE_ADMINISTRATEUR", "PROFIL_MENU", "PROFIL_USER", "PROFIL_SOUSMENU", "MARCHAND"})
+    void leBoutonDAnnulationSeDesactiveALEnvoi() throws Exception {
+        Mockito.doReturn(null).when(recuElectroniqueService).contreEcritureDe(200000007L);
+        mvc.perform(get("/annulation-op/annuler?numop=200000007"))
+                .andExpect(content().string(containsString("b.disabled = true")))
+                .andExpect(content().string(containsString("Annulation en cours, patientez")));
     }
 
     @Test

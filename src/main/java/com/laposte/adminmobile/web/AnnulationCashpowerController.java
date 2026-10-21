@@ -1,6 +1,7 @@
 package com.laposte.adminmobile.web;
 
 import com.laposte.adminmobile.service.CashpowerService;
+import com.laposte.adminmobile.service.OperationsEnCours;
 import com.laposte.adminmobile.service.CashpowerService.OperationCashpower;
 import com.laposte.adminmobile.service.CashpowerService.ResultatAnnulation;
 import org.springframework.security.core.Authentication;
@@ -33,10 +34,14 @@ public class AnnulationCashpowerController {
     private static final String VUE = "annulation-op/cashpower";
     private static final String RETOUR = "redirect:/annulation-op/cashpower";
 
-    private final CashpowerService cashpowerService;
+    static final String ANNULATION = "ANNULATION_CASHPOWER";
 
-    public AnnulationCashpowerController(CashpowerService cashpowerService) {
+    private final CashpowerService cashpowerService;
+    private final OperationsEnCours operationsEnCours;
+
+    public AnnulationCashpowerController(CashpowerService cashpowerService, OperationsEnCours operationsEnCours) {
         this.cashpowerService = cashpowerService;
+        this.operationsEnCours = operationsEnCours;
     }
 
     @GetMapping
@@ -75,7 +80,19 @@ public class AnnulationCashpowerController {
             return RETOUR;
         }
 
-        ResultatAnnulation resultat = cashpowerService.annuler(numero, authentication != null ? authentication.getName() : null);
+        // Un double clic lancerait deux appels simultanes, qui passeraient tous deux le controle
+        // "deja annulee" de la procedure (verification puis insertion, sans verrou) : un seul a la fois.
+        if (!operationsEnCours.demarrer(ANNULATION, numero)) {
+            redirectAttributes.addFlashAttribute("error", "Une annulation de l'operation " + numero
+                    + " est deja en cours. Patientez puis rechargez la page.");
+            return RETOUR;
+        }
+        ResultatAnnulation resultat;
+        try {
+            resultat = cashpowerService.annuler(numero, authentication != null ? authentication.getName() : null);
+        } finally {
+            operationsEnCours.terminer(ANNULATION, numero);
+        }
         // Meme affichage que le formulaire : "code - message" de la procedure.
         String message = resultat.code() + " - " + (resultat.message() == null ? "" : resultat.message());
         redirectAttributes.addFlashAttribute(resultat.reussi() ? "success" : "error", message);

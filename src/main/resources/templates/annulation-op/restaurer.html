@@ -46,9 +46,12 @@
         </table>
         <nav th:replace="~{fragments/pagination :: pager}"></nav>
 
+        <p style="margin-top:12px" th:if="${operationAnnulee != null}"
+           th:text="|Contre-ecriture de l'annulation de l'operation ${operationAnnulee}. La restauration supprime cette contre-ecriture et remet l'operation ${operationAnnulee}.|"></p>
+
         <form method="post" th:action="@{/annulation-op/restaurer}" style="margin-top:16px"
-              th:if="${!#lists.isEmpty(results)}"
-              onsubmit="return confirm('Voulez-vous confirmer la restauration de l\'operation ?');">
+              th:if="${!#lists.isEmpty(results) and operationAnnulee != null}"
+              onsubmit="if (!confirm('Voulez-vous confirmer la restauration de l\'operation ?')) { return false; } var b = this.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'Restauration en cours, patientez...'; return true;">
             <input type="hidden" name="numop" th:value="${numop}"/>
             <div class="form-actions">
                 <button type="submit">Restaurer Operation</button>
