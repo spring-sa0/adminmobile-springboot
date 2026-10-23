@@ -9,7 +9,7 @@ Portage de l'application historique Java EE / JSF + PrimeFaces
 
 | | |
 |---|---|
-| Version | 1.10.0 |
+| Version | 1.12.0 |
 | Java | 17 |
 | Framework | Spring Boot 3.5.16 (Web, Security, Data JPA, Thymeleaf, Mail) |
 | Base | Oracle (driver `ojdbc11`), schemas `SPT`, `IMOBILE`, `MBUDGET`, `EPOSTE`... |
@@ -341,7 +341,7 @@ src/main/resources/
 | Authentification | `LoginController`, `security/*` |
 | Accueil / menu | `HomeController`, `fragments/menu.html` |
 | Comptes | `ComptesController`, `CompteLieController` |
-| Operations / transactions | `OperationConsultationController`, `TransactionEtatController`, `AnnulationOpController`, `GatewayController`, `EposteOperationController` |
+| Operations / transactions | `OperationConsultationController`, `TransactionEtatController`, `CashpowerOperationsController`, `AnnulationOpController`, `GatewayController`, `EposteOperationController` |
 | Reclamations / suggestions / support | `ReclamationController`, `TypeReclamationController`, `SuggestionController`, `SupportController` |
 | Releves + JasperReports | `ReleveController`, `ReleveExportController`, `JasperReportService` |
 | Marchand / commissions / recap | `MarchandController`, `MarchandParametrageController`, `CommissionsController`, `RecapController`, `EposteReportController`, `SuggestionsReportController` |
@@ -428,6 +428,24 @@ fusion.
    compte et, si la date manque, la renseigne (`SYSDATE`) ; mise a jour atomique
    (`... AND DATE_CREATION IS NULL`), tracee dans `MODIF_CODESECRET` (motif « Assistance
    creation ») et `audit.log`.
+
+**Operations Cash Power** (`/etats/cashpower`, menu Etats > Cash Power) : achats CashPower faits
+   depuis les applications (`SPT.CASHPOWER`), filtres par application (E-Poste, Marchand, autres :
+   OmniPost et achats d'avant juillet 2025 sans application) et par statut (`SUCCESS` aboutie,
+   `FAILED` echouee, `PENDING` en attente, `INITIATED` initiee). Liste classee par application,
+   statut puis date, avec un recapitulatif nombre / montant. Les achats au guichet
+   (`ENCAISSEMENTS_CASH_POWER*`) ne sont pas concernes.
+
+**Statut d'un achat CashPower annule** : `P_ANNULER_OPERATION` ne modifie pas `SPT.CASHPOWER`.
+   Depuis la 1.12.0, l'ecran d'annulation passe l'achat a `STATUT = 'REMBOURSE'` juste apres
+   l'annulation, et rattrape le statut si la procedure repond « deja annulee ». Si cette mise a
+   jour echoue, l'annulation comptable reste faite et le message le signale.
+   Pour les annulations anterieures (ou faites par le formulaire Forms) : bouton « Mettre a jour
+   tous les statuts » en bas de l'ecran (tous les achats annules en une fois, environ une
+   minute, relancable sans risque), bouton « Passer le statut a REMBOURSE » pour une seule
+   operation, ou script equivalent `sql/1.12.0-remboursement-cashpower.sql`.
+   `LIBELLE_ECRITURE` n'etant pas indexee, verifier une annulation dans `MOUVEMENT` prend
+   environ 40 s (comme le controle « deja annulee » de la procedure elle-meme).
 
 4. **Journal `MODIF_CODESECRET`.** Cette table d'audit n'a pas de vraie cle : `TELEPHONE`,
    mappe en `@Id`, y apparait plusieurs fois. L'entite n'est donc utilisee qu'en insertion

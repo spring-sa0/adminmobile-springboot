@@ -4,6 +4,8 @@ import com.laposte.adminmobile.service.CashpowerService;
 import com.laposte.adminmobile.service.OperationsEnCours;
 import com.laposte.adminmobile.service.CashpowerService.OperationCashpower;
 import com.laposte.adminmobile.service.CashpowerService.ResultatAnnulation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +26,10 @@ import java.util.List;
  * operation presente dans SPT.MOUVEMENT. Ici, l'annulation n'est possible que pour une operation
  * CashPower existante (verifie a nouveau cote serveur au moment de l'annulation).
  * <p>
+ * Apres l'annulation, l'achat passe au statut {@link CashpowerService#STATUT_REMBOURSE} dans
+ * SPT.CASHPOWER (la procedure ne touche pas a cette table). Un bouton met a jour en une fois tous
+ * les achats annules auparavant.
+ * <p>
  * Reserve aux administrateurs (regle /annulation-op/** de SecurityConfig). Chaque annulation est
  * tracee dans audit.log (AuditInterceptor) et ses ecritures portent l'identifiant de l'agent.
  */
@@ -35,6 +41,9 @@ public class AnnulationCashpowerController {
     private static final String RETOUR = "redirect:/annulation-op/cashpower";
 
     static final String ANNULATION = "ANNULATION_CASHPOWER";
+    static final String MISE_A_JOUR_STATUTS = "STATUTS_CASHPOWER";
+
+    private static final Logger log = LoggerFactory.getLogger(AnnulationCashpowerController.class);
 
     private final CashpowerService cashpowerService;
     private final OperationsEnCours operationsEnCours;
@@ -60,7 +69,10 @@ public class AnnulationCashpowerController {
         if (operations.isEmpty()) {
             model.addAttribute("error", "Aucune operation CashPower trouvee pour le numero " + numero + ".");
         } else {
-            model.addAttribute("annulationExistante", cashpowerService.annulationExistante(numero));
+            Long annulation = cashpowerService.annulationExistante(numero);
+            model.addAttribute("annulationExistante", annulation);
+            model.addAttribute("statutARattraper", annulation != null && operations.stream()
+                    .anyMatch(o -> !CashpowerService.STATUT_REMBOURSE.equals(o.statut())));
         }
         return VUE;
     }
@@ -95,8 +107,76 @@ public class AnnulationCashpowerController {
         }
         // Meme affichage que le formulaire : "code - message" de la procedure.
         String message = resultat.code() + " - " + (resultat.message() == null ? "" : resultat.message());
+        // 0 : annulee a l'instant ; 2 : deja annulee (par exemple par le formulaire Forms, qui ne
+        // changeait pas le statut) : dans les deux cas l'achat est rembourse.
+        if (resultat.reussi() || resultat.code() == 2) {
+            message += statutMisAJour(numero);
+        }
         redirectAttributes.addFlashAttribute(resultat.reussi() ? "success" : "error", message);
         return RETOUR;
+    }
+
+    /**
+     * Rattrapage pour une operation deja annulee dont l'achat n'a pas le statut rembourse (annulations
+     * faites avant la version 1.12.0 ou par le formulaire Forms).
+     */
+    @PostMapping("/statut")
+    public String marquerRembourse(@RequestParam String numop, RedirectAttributes redirectAttributes) {
+        Long numero = numero(numop);
+        if (numero == null) {
+            redirectAttributes.addFlashAttribute("error", "Numero d'operation invalide : chiffres uniquement.");
+            return RETOUR;
+        }
+        redirectAttributes.addAttribute("numop", numero);
+        if (cashpowerService.annulationExistante(numero) == null) {
+            redirectAttributes.addFlashAttribute("error", "Statut non modifie : l'operation " + numero
+                    + " n'a pas ete annulee.");
+            return RETOUR;
+        }
+        String message = statutMisAJour(numero);
+        redirectAttributes.addFlashAttribute(message.contains("ECHEC") ? "error" : "success",
+                "Operation " + numero + " deja annulee." + message);
+        return RETOUR;
+    }
+
+    /**
+     * Mise a jour en une fois de tous les achats deja annules qui n'ont pas le statut rembourse
+     * (environ une minute). Sans effet sur la comptabilite ; peut etre relancee sans risque.
+     */
+    @PostMapping("/statuts")
+    public String marquerTousRembourses(RedirectAttributes redirectAttributes) {
+        if (!operationsEnCours.demarrer(MISE_A_JOUR_STATUTS, 0)) {
+            redirectAttributes.addFlashAttribute("error", "Une mise a jour des statuts est deja en cours. "
+                    + "Patientez puis rechargez la page.");
+            return RETOUR;
+        }
+        try {
+            int lignes = cashpowerService.marquerTousRembourses();
+            redirectAttributes.addFlashAttribute("success", lignes == 0
+                    ? "Aucun achat a mettre a jour : tous les achats annules ont deja le statut "
+                    + CashpowerService.STATUT_REMBOURSE + "."
+                    : lignes + " achat(s) CashPower passe(s) au statut " + CashpowerService.STATUT_REMBOURSE + ".");
+        } catch (RuntimeException e) {
+            log.error("Mise a jour des statuts CashPower rembourses en echec", e);
+            redirectAttributes.addFlashAttribute("error", "ECHEC de la mise a jour des statuts (aucune ligne"
+                    + " modifiee) : detail dans Supervision > Etat de sante et erreurs.");
+        } finally {
+            operationsEnCours.terminer(MISE_A_JOUR_STATUTS, 0);
+        }
+        return RETOUR;
+    }
+
+    /** Passe l'achat au statut rembourse ; l'annulation comptable est faite quoi qu'il arrive ici. */
+    private String statutMisAJour(long numero) {
+        try {
+            int lignes = cashpowerService.marquerRembourse(numero);
+            return lignes > 0 ? " Achat passe au statut " + CashpowerService.STATUT_REMBOURSE + "."
+                    : " Achat deja au statut " + CashpowerService.STATUT_REMBOURSE + ".";
+        } catch (RuntimeException e) {
+            log.error("Statut CashPower non mis a jour pour l'operation {} annulee", numero, e);
+            return " ECHEC de la mise a jour du statut de l'achat (l'annulation comptable est faite) :"
+                    + " utilisez le bouton de mise a jour du statut.";
+        }
     }
 
     private static Long numero(String saisie) {

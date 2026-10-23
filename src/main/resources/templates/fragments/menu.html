@@ -93,6 +93,17 @@
                 </li>
                 <li>
                     <details>
+                        <summary>Cash Power</summary>
+                        <ul>
+                            <li><a th:href="@{/etats/cashpower}">Toutes, par statut</a></li>
+                            <li><a th:href="@{/etats/cashpower(application='EPOSTE')}">Cash Power E-Poste</a></li>
+                            <li><a th:href="@{/etats/cashpower(application='MARCHAND',statut='ABOUTIES')}">Marchand, abouties</a></li>
+                            <li><a th:href="@{/etats/cashpower(application='MARCHAND',statut='NON_ABOUTIES')}">Marchand, non abouties</a></li>
+                        </ul>
+                    </details>
+                </li>
+                <li>
+                    <details>
                         <summary>Comptes</summary>
                         <ul>
                             <li><a th:href="@{/comptes/nombre}">Nombre de Comptes</a></li>

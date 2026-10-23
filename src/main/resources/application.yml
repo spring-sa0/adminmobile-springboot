@@ -40,8 +40,8 @@ spring:
     # Serveur SMTP. Vide : aucun e-mail ne peut partir (notifications, alertes de supervision).
     host: ${MAIL_HOST:webmail.laposte.tg}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    username: ${MAIL_USER}
+    password: ${MAIL_PASSWORD}
     properties:
       mail.smtp.auth: ${MAIL_AUTH:true}
       # Port 587 (soumission) : le serveur exige une connexion chiffree avant l'envoi
